@@ -1,0 +1,46 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Presence | FAL</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <div class="app-container"> <header>
+            <div class="logo">Cloud<span>Presence</span></div>
+            <div class="tab-switcher">
+                <button onclick="switchTab('mahasiswa')" id="tab-mhs" class="active">Mahasiswa</button>
+                <button onclick="switchTab('admin')" id="tab-admin">Admin/Dosen</button>
+            </div>
+        </header>
+
+        <main>
+            <section id="panel-mahasiswa" class="panel">
+                <div class="card">
+                    <h3>📷 Scanner Presensi</h3>
+                    <div id="reader"></div>
+                    <div id="scan-status" class="status-message">Siap memindai...</div>
+                </div>
+
+                <div class="card">
+                    <h3>Status Presensi</h3>
+                    <p>Status: <b id="my-status" class="text-badge">NOT CHECKED IN</b></p>
+                    <button class="btn-gradient" onclick="checkMyStatus()">Perbarui Status</button>
+                </div>
+            </section>
+
+            <section id="panel-admin" class="panel" style="display:none">
+                <div class="card card-gradient">
+                    <h3>Generate QR Kuliah</h3>
+                    <button class="btn-white" onclick="generateQR()">Generate Token</button>
+                    <div id="qr-result" class="qr-output" style="display:none">
+                        <div id="qrcode"></div>
+                        <p id="qr-token-text">---</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
