@@ -62,7 +62,7 @@ scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (tok
     
     const payload = {
         user_id: USER_DATA.user_id,
-        device_id: "dev-falih-mobile",
+        device_id: "kel-mobile",
         course_id: USER_DATA.course_id,
         session_id: USER_DATA.session_id,
         qr_token: token,
