@@ -236,7 +236,7 @@ function startCamera() {
       video.srcObject = stream;
       video.play();
       scanningActive = true;
-
+        
       video.onloadedmetadata = function () {
         scanQRFromVideo();
       };
@@ -290,80 +290,65 @@ function scanQRFromVideo() {
     return;
   }
 
-  // Create an offscreen canvas for detection
   var canvas = document.createElement("canvas");
   var ctx = canvas.getContext("2d");
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0);
 
-  if ("BarcodeDetector" in window) {
-    var detector = new BarcodeDetector({ formats: ["qr_code"] });
-    detector.detect(canvas).then(function (barcodes) {
-      if (barcodes.length > 0 && scanningActive) {
-        scanningActive = false;
-        processCheckIn(barcodes[0].rawValue);
-        return;
-      }
-      if (scanningActive) {
-        animFrameId = requestAnimationFrame(scanQRFromVideo);
-      }
-    }).catch(function () {
-      if (scanningActive) {
-        animFrameId = requestAnimationFrame(scanQRFromVideo);
-      }
-    });
-  } else {
-    // BarcodeDetector not available - keep trying
-    animFrameId = requestAnimationFrame(scanQRFromVideo);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  console.log("Scanning frame...");
+  
+  var code = jsQR(imageData.data, canvas.width, canvas.height);
+
+  if (code && scanningActive) {
+    console.log("QR detected:", code.data);
+    scanningActive = false;
+    processCheckIn(code.data);
+    return;
   }
+
+  animFrameId = requestAnimationFrame(scanQRFromVideo);
 }
 
 // ==============================================
-// 6. STUDENT - CHECK-IN
+// 6. STUDENT - PROCESS CHECK-IN
 // ==============================================
-async function processCheckIn(token) {
-  setScanStatus("processing", "Sedang memproses check-in...");
-
-  var payload = {
-    user_id: USER_DATA.user_id,
-    device_id: "kel-mobile",
-    course_id: USER_DATA.course_id,
-    session_id: USER_DATA.session_id,
-    qr_token: token,
-    ts: new Date().toISOString()
-  };
+async function processCheckIn(qrToken) {
+  setScanStatus("processing", "Memproses QR Code...");
 
   try {
-    var res = await fetch(BASE_URL + "?path=presence/checkin", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    var json = await res.json();
+    const payload = {
+      user_id: USER_DATA.user_id,
+      course_id: USER_DATA.course_id,
+      session_id: USER_DATA.session_id,
+      qr_token: qrToken,
+      ts: new Date().toISOString()
+    };
+
+const res = await fetch(BASE_URL + "?path=presence/checkin", {
+  method: "POST",
+  body: new URLSearchParams(payload)
+});
+    const json = await res.json();
 
     if (json.ok) {
-      setScanStatus("success", "Berhasil Check-In!");
-      stopCamera();
-      checkMyStatus();
-
-      // Update scan button
-      var btnStart = document.getElementById("btn-start-scan");
-      btnStart.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg> Scan Ulang';
+      setScanStatus("success", "Check-in berhasil!");
+      checkMyStatus(); // update status di UI
     } else {
-      setScanStatus("error", json.error || "Token Invalid");
-      setTimeout(function () {
-        setScanStatus("scanning", "Arahkan kamera ke QR Code...");
-        scanningActive = true;
-        scanQRFromVideo();
-      }, 3000);
+      setScanStatus("error", json.error || "Check-in gagal!");
     }
   } catch (err) {
-    setScanStatus("error", "Gangguan koneksi!");
-    setTimeout(function () {
-      setScanStatus("scanning", "Arahkan kamera ke QR Code...");
+    setScanStatus("error", "Gagal koneksi ke server!");
+  } finally {
+    // restart scan jika mau
+    setTimeout(() => {
       scanningActive = true;
       scanQRFromVideo();
-    }, 3000);
+    }, 2000);
   }
 }
 
