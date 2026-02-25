@@ -1,0 +1,134 @@
+:root {
+    --primary-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); /* Biru ke Ungu */
+    --bg-light: #f8fafc;
+    --card-white: #ffffff;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+}
+
+/* Header & Tab */
+header { text-align: center; margin-bottom: 25px; }
+.logo { font-weight: 800; font-size: 1.5rem; margin-bottom: 20px; letter-spacing: -1px; }
+.logo span { color: #6366f1; }
+
+.tab-switcher {
+    background: #e2e8f0;
+    padding: 5px;
+    border-radius: 12px;
+    display: flex;
+    gap: 5px;
+}
+
+.tab-switcher button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: 0.3s;
+}
+
+.tab-switcher button.active {
+    background: white;
+    color: var(--text-dark);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+/* Card Styling */
+.card {
+    background: var(--card-white);
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    border: 1px solid #f1f5f9;
+}
+
+.card-gradient {
+    background: var(--primary-grad);
+    color: white;
+}
+
+.card-gradient h3 { color: white; margin-bottom: 5px; }
+
+/* Buttons */
+.btn-gradient {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: var(--primary-grad);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.btn-white {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: white;
+    color: #6366f1;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Scanner Area */
+#reader {
+    border-radius: 15px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0 !important;
+}
+
+.status-message {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.text-badge {
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: #6366f1;
+}
+
+/* QR Output Area */
+.qr-output {
+    background: white;
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.token-box {
+    margin-top: 15px;
+    text-align: center;
+    color: var(--text-dark);
+}
+
+.token-box span { font-size: 0.7rem; color: var(--text-muted); display: block; }
