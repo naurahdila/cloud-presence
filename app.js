@@ -64,9 +64,10 @@ async function generateQR() {
   };
 
   try {
-    const res = await fetch(BASE_URL + "?path=presence/qr/generate", {
-      method: "POST",
-      body: JSON.stringify(payload)
+        const res = await fetch(BASE_URL + "?path=presence/qr/generate", {
+    method: "POST",
+    body: JSON.stringify(payload)
+    // ← TIDAK ada headers sama sekali
     });
     const json = await res.json();
 
@@ -323,6 +324,7 @@ async function processCheckIn(qrToken) {
   try {
     const payload = {
       user_id: USER_DATA.user_id,
+      device_id: "web-browser",
       course_id: USER_DATA.course_id,
       session_id: USER_DATA.session_id,
       qr_token: qrToken,
@@ -331,8 +333,10 @@ async function processCheckIn(qrToken) {
 
 const res = await fetch(BASE_URL + "?path=presence/checkin", {
   method: "POST",
-  body: new URLSearchParams(payload)
+  body: JSON.stringify(payload)
+  // ← TIDAK ada headers sama sekali
 });
+
     const json = await res.json();
 
     if (json.ok) {
