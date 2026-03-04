@@ -9,6 +9,13 @@
   --primary-fg: #ffffff;
   --primary-light: rgba(67, 56, 202, 0.08);
 
+  /* Admin / Dosen color scheme — teal/emerald to differentiate from student */
+  --admin: #0f766e;
+  --admin-hover: #0d6460;
+  --admin-fg: #ffffff;
+  --admin-light: rgba(15, 118, 110, 0.08);
+  --admin-bg-header: #0f766e;
+
   --bg: #f5f5f7;
   --surface: #ffffff;
   --foreground: #1a1a2e;
@@ -141,10 +148,53 @@ body {
   color: var(--foreground);
 }
 
-.tab-btn.active {
+/* Student tab active */
+.tab-btn#tab-mhs.active {
   background: var(--surface);
-  color: var(--foreground);
+  color: var(--primary);
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* Admin tab active — different color */
+.tab-btn#tab-admin.active {
+  background: var(--surface);
+  color: var(--admin);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* --- Admin Hero Banner --- */
+.admin-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--admin), #0d9488);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  color: white;
+}
+
+.admin-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.admin-hero-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.admin-hero-sub {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 2px;
 }
 
 /* --- Cards --- */
@@ -162,6 +212,11 @@ body {
 
 .card-header.bg-primary {
   background: var(--primary);
+  padding: 20px;
+}
+
+.card-header.bg-admin {
+  background: var(--admin);
   padding: 20px;
 }
 
@@ -206,6 +261,161 @@ body {
   color: var(--primary);
 }
 
+.icon-admin {
+  color: var(--admin);
+}
+
+/* --- Form Elements --- */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.required {
+  color: var(--danger);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--foreground);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+}
+
+.form-input-admin:focus {
+  border-color: var(--admin);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.profile-error {
+  font-size: 12px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 10px;
+}
+
+/* --- Identity Banner --- */
+.identity-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--primary-light);
+  border: 1.5px solid rgba(67, 56, 202, 0.15);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+
+.identity-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.identity-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.identity-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.identity-text span {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.identity-text small {
+  font-size: 11px;
+  color: var(--muted-fg);
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: white;
+  color: var(--muted-fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* --- Session Badge Row (QR result) --- */
+.session-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-badge {
+  padding: 4px 12px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--admin);
+  border: 1.5px solid rgba(15, 118, 110, 0.2);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.session-badge-sep {
+  color: var(--muted-fg);
+  font-weight: 600;
+}
+
 /* --- Buttons --- */
 .btn {
   display: inline-flex;
@@ -235,6 +445,16 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
+}
+
+/* Admin button — teal */
+.btn-admin {
+  background: var(--admin);
+  color: var(--admin-fg);
+}
+
+.btn-admin:hover:not(:disabled) {
+  background: var(--admin-hover);
 }
 
 .btn-outline {
@@ -415,7 +635,7 @@ body {
   font-size: 36px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--primary);
+  color: var(--admin);
   line-height: 1;
 }
 
@@ -439,7 +659,7 @@ body {
 .progress-fill {
   height: 100%;
   width: 100%;
-  background: var(--primary);
+  background: var(--admin);
   border-radius: 100px;
   transition: width 1s linear, background-color 0.5s ease;
 }
@@ -533,11 +753,6 @@ body {
 
 .spin {
   animation: spin 1s linear infinite;
-}
-
-/* Panel */
-.panel {
-  /* default block */
 }
 
 /* Responsive */
