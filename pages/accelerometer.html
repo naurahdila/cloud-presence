@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accelerometer</title>
+
+<link rel="stylesheet" href="../style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6f9;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.card{
+background:white;
+padding:30px;
+border-radius:12px;
+box-shadow:0 4px 20px rgba(0,0,0,0.1);
+width:380px;
+text-align:center;
+}
+
+.sensor-box{
+display:flex;
+justify-content:space-between;
+margin:20px 0;
+}
+
+.sensor{
+background:#f1f3f5;
+padding:15px;
+border-radius:8px;
+width:90px;
+}
+
+.sensor span{
+font-size:18px;
+font-weight:bold;
+}
+
+button{
+padding:12px 20px;
+border:none;
+background:#2563eb;
+color:white;
+border-radius:8px;
+cursor:pointer;
+font-size:15px;
+margin-top:10px;
+}
+
+canvas{
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Accelerometer</h2>
+<p>Gerakkan smartphone untuk melihat sensor</p>
+
+<div class="sensor-box">
+
+<div class="sensor">
+X<br>
+<span id="x">0</span>
+</div>
+
+<div class="sensor">
+Y<br>
+<span id="y">0</span>
+</div>
+
+<div class="sensor">
+Z<br>
+<span id="z">0</span>
+</div>
+
+</div>
+
+<button onclick="startSensor()">Start Sensor</button>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<script>
+
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
+
+let samples = [];
+
+/* CHART SETUP */
+
+const ctx = document.getElementById("chart");
+
+const chart = new Chart(ctx,{
+type:"line",
+data:{
+labels:[],
+datasets:[
+{
+label:"X",
+data:[],
+borderColor:"red",
+fill:false
+},
+{
+label:"Y",
+data:[],
+borderColor:"green",
+fill:false
+},
+{
+label:"Z",
+data:[],
+borderColor:"blue",
+fill:false
+}
+]
+},
+options:{
+animation:false,
+responsive:true,
+scales:{
+y:{
+min:-20,
+max:20
+}
+}
+}
+});
+
+
+function updateChart(x,y,z){
+
+let time = new Date().toLocaleTimeString();
+
+chart.data.labels.push(time);
+chart.data.datasets[0].data.push(x);
+chart.data.datasets[1].data.push(y);
+chart.data.datasets[2].data.push(z);
+
+if(chart.data.labels.length > 20){
+chart.data.labels.shift();
+chart.data.datasets.forEach(d => d.data.shift());
+}
+
+chart.update();
+
+}
+
+
+/* SENSOR */
+
+function startSensor(){
+
+if (typeof DeviceMotionEvent.requestPermission === "function") {
+
+DeviceMotionEvent.requestPermission()
+.then(permissionState => {
+
+if (permissionState === "granted") {
+listenSensor();
+}
+
+});
+
+} else {
+
+listenSensor();
+
+}
+
+}
+
+function listenSensor(){
+
+window.addEventListener("devicemotion", function(event){
+
+if(!event.accelerationIncludingGravity) return;
+
+let x = event.accelerationIncludingGravity.x || 0;
+let y = event.accelerationIncludingGravity.y || 0;
+let z = event.accelerationIncludingGravity.z || 0;
+
+document.getElementById("x").innerText = x.toFixed(2);
+document.getElementById("y").innerText = y.toFixed(2);
+document.getElementById("z").innerText = z.toFixed(2);
+
+updateChart(x,y,z);
+
+samples.push({
+t:new Date().toISOString(),
+x:x,
+y:y,
+z:z
+});
+
+});
+
+}
+
+/* SEND DATA */
+
+setInterval(sendBatch,3000);
+
+function sendBatch(){
+
+if(samples.length === 0) return;
+
+let payload = {
+device_id:"dev-001",
+ts:new Date().toISOString(),
+samples:samples
+};
+
+fetch(BASE_URL+"?path=telemetry/accel",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
+});
+
+samples=[];
+
+}
+
+</script>
+
+</body>
+</html>

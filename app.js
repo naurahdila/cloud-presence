@@ -5,7 +5,7 @@
 // --- CONFIG ---
 const BASE_URL = "https://script.google.com/macros/s/AKfycbxgSv71JmAE9pAEx93mikmyO1ML1p2b9zTSPqPKZy1807I-ve5FsMgSdTAfpDFpvwNG/exec";
 
-const QR_DURATION_SECONDS = 60; // 1 menit
+const QR_DURATION_SECONDS = 120; // 1 menit
 
 // --- STATE ---
 let currentToken = null;
@@ -483,6 +483,71 @@ function setScanStatus(type, message) {
   }
 
   statusEl.innerHTML = iconHtml + '<span id="scan-status-text">' + message + '</span>';
+}
+
+function startAccelerometer(){
+
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    DeviceMotionEvent.requestPermission()
+    .then(permission => {
+      if(permission === "granted"){
+        listenAccelerometer();
+      }else{
+        console.log("permission denied");
+      }
+    });
+  }else{
+    listenAccelerometer();
+  }
+
+}
+
+function listenAccelerometer(){
+
+  window.addEventListener("devicemotion", function(event){
+
+    let x = event.accelerationIncludingGravity.x || 0;
+    let y = event.accelerationIncludingGravity.y || 0;
+    let z = event.accelerationIncludingGravity.z || 0;
+
+    accelSamples.push({
+      t: new Date().toISOString(),
+      x: x,
+      y: y,
+      z: z
+    });
+
+  });
+
+}
+
+// kirim data tiap 3 detik
+setInterval(sendAccelBatch,3000);
+
+function sendAccelBatch(){
+
+  if(accelSamples.length === 0) return;
+
+  let payload = {
+    device_id: USER_DATA.device_id || "unknown",
+    ts: new Date().toISOString(),
+    samples: accelSamples
+  };
+
+  fetch(TELEMETRY_URL + "?path=telemetry/accel",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify(payload)
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    console.log("telemetry sent",data);
+  });
+
+  accelSamples=[];
+
 }
 
 // --- Init ---
