@@ -94,6 +94,7 @@ Z<br>
 </div>
 
 <button onclick="startSensor()">Start Sensor</button>
+<button onclick="stopSensor()">Stop Sensor</button>
 
 <canvas id="chart"></canvas>
 
@@ -104,6 +105,7 @@ Z<br>
 const BASE_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
 
 let samples = [];
+let motionHandler = null;
 
 /* CHART SETUP */
 
@@ -191,15 +193,15 @@ listenSensor();
 
 function listenSensor(){
 
-window.addEventListener("devicemotion", function(event){
-
-if(!event.accelerationIncludingGravity) return;
+motionHandler = function(event){
 
 let acc = event.accelerationIncludingGravity || event.acceleration;
 
-let x = acc ? acc.x : 0;
-let y = acc ? acc.y : 0;
-let z = acc ? acc.z : 0;
+if(!acc) return;
+
+let x = acc.x || 0;
+let y = acc.y || 0;
+let z = acc.z || 0;
 
 document.getElementById("x").innerText = x.toFixed(2);
 document.getElementById("y").innerText = y.toFixed(2);
@@ -214,9 +216,22 @@ y:y,
 z:z
 });
 
-});
+};
+
+window.addEventListener("devicemotion", motionHandler);
 
 }
+
+
+function stopSensor(){
+
+if(motionHandler){
+window.removeEventListener("devicemotion", motionHandler);
+motionHandler = null;
+}
+
+}
+
 
 /* SEND DATA */
 
