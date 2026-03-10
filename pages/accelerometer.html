@@ -195,9 +195,11 @@ window.addEventListener("devicemotion", function(event){
 
 if(!event.accelerationIncludingGravity) return;
 
-let x = event.accelerationIncludingGravity.x || 0;
-let y = event.accelerationIncludingGravity.y || 0;
-let z = event.accelerationIncludingGravity.z || 0;
+let acc = event.accelerationIncludingGravity || event.acceleration;
+
+let x = acc ? acc.x : 0;
+let y = acc ? acc.y : 0;
+let z = acc ? acc.z : 0;
 
 document.getElementById("x").innerText = x.toFixed(2);
 document.getElementById("y").innerText = y.toFixed(2);
