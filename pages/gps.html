@@ -49,8 +49,14 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap'
 }).addTo(map);
 
+map.on('dragstart', () => {
+  isFollowing = false;
+});
+
+let circle;
 let marker;
 let polyline;
+let isFollowing = true;
 
 function startTracking() {
   const name = document.getElementById("username").value;
@@ -104,13 +110,28 @@ async function loadLatest() {
 
   if (!json.ok) return;
 
-  const { lat, lng } = json.data;
+  const { lat, lng, accuracy_m } = json.data;
 
   if (marker) {
     marker.setLatLng([lat, lng]);
   } else {
     marker = L.marker([lat, lng]).addTo(map);
   }
+    if (isFollowing) {
+    map.flyTo([lat, lng], map.getZoom());
+    }
+  // 🔵 CIRCLE (AKURASI)
+  if (circle) {
+    circle.setLatLng([lat, lng]);
+    circle.setRadius(accuracy_m || 50);
+  } else {
+    circle = L.circle([lat, lng], {
+      radius: accuracy_m || 50,
+    }).addTo(map);
+  }
+
+  // 🧠 OPTIONAL: popup info
+  marker.bindPopup(`Akurasi: ${accuracy_m} meter`).openPopup();
 }
 
 // ================== LOAD HISTORY ==================
