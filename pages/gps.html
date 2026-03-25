@@ -33,19 +33,20 @@ let polyline;
 
 // ================== SEND GPS ==================
 function sendGPS(lat, lng, accuracy) {
+  const params = new URLSearchParams();
+  params.append("device_id", DEVICE_ID);
+  params.append("ts", new Date().toISOString());
+  params.append("lat", lat);
+  params.append("lng", lng);
+  params.append("accuracy_m", accuracy);
+
   fetch(`${BASE_URL}?path=telemetry/gps`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      device_id: DEVICE_ID,
-      ts: new Date().toISOString(),
-      lat,
-      lng,
-      accuracy_m: accuracy
-    })
-  });
+    body: params
+  })
+  .then(res => res.json())
+  .then(res => console.log("POST:", res))
+  .catch(err => console.error("ERROR:", err));
 }
 
 // ================== WATCH GPS ==================
