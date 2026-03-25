@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GPS Tracking Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
+const DEVICE_ID = "dev-001";
+
+let map = L.map('map').setView([-7.2575, 112.7521], 15);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+let marker;
+let polyline;
+
+</script>
+
+</body>
+</html>
+
+function sendGPS(lat, lng, accuracy) {
+  fetch(`${BASE_URL}?path=telemetry/gps`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      device_id: DEVICE_ID,
+      ts: new Date().toISOString(),
+      lat,
+      lng,
+      accuracy_m: accuracy
+    })
+  });
+}
+
+navigator.geolocation.watchPosition(pos => {
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  const acc = pos.coords.accuracy;
+
+  sendGPS(lat, lng, acc);
+}, err => console.error(err), {
+  enableHighAccuracy: true
+});
+
+async function loadLatest() {
+  const res = await fetch(`${BASE_URL}?path=telemetry/gps/latest&device_id=${DEVICE_ID}`);
+  const json = await res.json();
+
+  if (!json.ok) return;
+
+  const { lat, lng } = json.data;
+
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng]).addTo(map);
+  }
+
+  map.setView([lat, lng], 15);
+}
+
+async function loadHistory() {
+  const res = await fetch(`${BASE_URL}?path=telemetry/gps/history&device_id=${DEVICE_ID}&limit=50`);
+  const json = await res.json();
+
+  if (!json.ok) return;
+
+  const points = json.data.items.map(i => [i.lat, i.lng]);
+
+  if (polyline) {
+    polyline.setLatLngs(points);
+  } else {
+    polyline = L.polyline(points, { color: 'blue' }).addTo(map);
+  }
+}
+
+setInterval(() => {
+  loadLatest();
+  loadHistory();
+}, 5000);
