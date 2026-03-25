@@ -1,38 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>GPS Tracking Map</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Tracking - CloudPresence</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
-  <style>
-    body { margin: 0; }
+<!-- FONT SAMA SEPERTI INDEX -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    #map {
-      height: 100vh;
-    }
+<link rel="stylesheet" href="style.css">
 
-    #login {
-      position: absolute;
-      z-index: 1000;
-      background: white;
-      padding: 20px;
-      top: 20px;
-      left: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-  </style>
+<style>
+
+body{
+  margin:0;
+  overflow:hidden;
+  font-family:'Poppins', sans-serif;
+}
+
+#map{
+  height:100vh;
+  width:100%;
+}
+
+.gps-modal{
+  position:absolute;
+  z-index:1000;
+  top:20px;
+  left:20px;
+  right:20px;
+  max-width:400px;
+  background:var(--bg-primary,white);
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  font-family:'Poppins', sans-serif;
+}
+
+.gps-modal.hidden{
+  display:none;
+}
+
+.gps-modal h3{
+  margin:0 0 15px 0;
+  font-size:18px;
+  font-weight:600;
+}
+
+.gps-modal input{
+  width:100%;
+  padding:10px 12px;
+  margin-bottom:12px;
+  border:1px solid var(--border-color,#ddd);
+  border-radius:8px;
+  font-size:14px;
+  font-family:'Poppins', sans-serif;
+  box-sizing:border-box;
+}
+
+.gps-info{
+  position:absolute;
+  z-index:999;
+  bottom:20px;
+  left:20px;
+  background:var(--bg-primary,white);
+  padding:15px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  font-size:13px;
+  max-width:300px;
+  display:none;
+  font-family:'Poppins', sans-serif;
+}
+
+.gps-info.active{
+  display:block;
+}
+
+.gps-status{
+  position:absolute;
+  z-index:999;
+  top:20px;
+  right:20px;
+  background:var(--bg-primary,white);
+  padding:12px 16px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  font-size:13px;
+  display:none;
+  font-family:'Poppins', sans-serif;
+}
+
+.gps-status.active{
+  display:block;
+}
+
+.status-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  margin-right:6px;
+  animation:pulse 2s infinite;
+}
+
+.status-dot.tracking{
+  background-color:#10b981;
+}
+
+.status-dot.waiting{
+  background-color:#f59e0b;
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.5;}
+}
+
+.btn{
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  font-size:14px;
+  font-weight:500;
+  cursor:pointer;
+  font-family:'Poppins', sans-serif;
+  transition:all .2s ease;
+}
+
+.btn-primary{
+  background-color:var(--primary-color,#3b82f6);
+  color:white;
+  width:100%;
+}
+
+.btn-primary:hover{
+  opacity:.9;
+  transform:translateY(-2px);
+  box-shadow:0 4px 8px rgba(59,130,246,0.3);
+}
+
+.btn-secondary{
+  background-color:var(--secondary-color,#6b7280);
+  color:white;
+  width:100%;
+  margin-top:8px;
+}
+
+.leaflet-container{
+  font-family:'Poppins', sans-serif;
+}
+
+</style>
 </head>
 
 <body>
 
-<div id="login">
-  <h3>Masukkan Nama</h3>
-  <input type="text" id="username" placeholder="Nama kamu">
-  <button onclick="startTracking()">Mulai</button>
+<!-- LOGIN MODAL -->
+<div id="login" class="gps-modal">
+<h3>🗺️ GPS Tracking</h3>
+<input type="text" id="username" placeholder="Masukkan Nama Anda">
+<button class="btn btn-primary" onclick="startTracking()">Mulai Tracking</button>
+<button class="btn btn-secondary" onclick="goHome()">← Kembali</button>
+</div>
+
+<!-- STATUS -->
+<div id="status" class="gps-status">
+<span class="status-dot waiting"></span>
+<span id="status-text">Menunggu...</span>
+</div>
+
+<!-- INFO -->
+<div id="info" class="gps-info">
+<div><strong>📍 Posisi:</strong> <span id="info-pos">-</span></div>
+<div><strong>📏 Akurasi:</strong> <span id="info-acc">-</span></div>
+<div><strong>👤 User:</strong> <span id="info-user">-</span></div>
+<button class="btn btn-secondary" style="margin-top:12px;padding:8px;" onclick="stopTracking()">Berhenti Tracking</button>
 </div>
 
 <div id="map"></div>
@@ -40,123 +185,161 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
-let DEVICE_ID = null;
 
-let map = L.map('map').setView([-7.2575, 112.7521], 15);
+const BASE_URL="https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap'
+let DEVICE_ID=null;
+let isTracking=false;
+let watchId=null;
+
+let map=L.map('map').setView([-7.2575,112.7521],15);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'&copy; OpenStreetMap'
 }).addTo(map);
 
-map.on('dragstart', () => {
-  isFollowing = false;
-});
-
-let circle;
 let marker;
+let circle;
 let polyline;
-let isFollowing = true;
+let isFollowing=true;
 
-function startTracking() {
-  const name = document.getElementById("username").value;
+map.on('dragstart',()=>{isFollowing=false;});
 
-  if (!name) {
-    alert("Isi nama dulu!");
-    return;
-  }
+function startTracking(){
 
-  DEVICE_ID = name;
+const name=document.getElementById("username").value;
 
-  document.getElementById("login").style.display = "none";
-
-  startGPS();
+if(!name){
+alert("Isi nama dulu!");
+return;
 }
 
-// ================== SEND GPS ==================
-function sendGPS(lat, lng, accuracy) {
-  const params = new URLSearchParams();
-  params.append("device_id", DEVICE_ID);
-  params.append("ts", new Date().toISOString());
-  params.append("lat", lat);
-  params.append("lng", lng);
-  params.append("accuracy_m", accuracy);
+DEVICE_ID=name;
+isTracking=true;
 
-  fetch(`${BASE_URL}?path=telemetry/gps`, {
-    method: "POST",
-    body: params
-  });
+document.getElementById("login").classList.add("hidden");
+document.getElementById("status").classList.add("active");
+document.getElementById("info").classList.add("active");
+
+document.getElementById("info-user").textContent=name;
+
+startGPS();
 }
 
-// ================== WATCH GPS ==================
-function startGPS() {
-  navigator.geolocation.watchPosition(pos => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const acc = pos.coords.accuracy;
+function stopTracking(){
 
-    sendGPS(lat, lng, acc);
-  }, err => console.error(err), {
-    enableHighAccuracy: true
-  });
+isTracking=false;
+
+if(watchId){
+navigator.geolocation.clearWatch(watchId);
 }
 
-// ================== LOAD LATEST ==================
-async function loadLatest() {
-  if (!DEVICE_ID) return;
+document.getElementById("login").classList.remove("hidden");
+document.getElementById("status").classList.remove("active");
+document.getElementById("info").classList.remove("active");
 
-  const res = await fetch(`${BASE_URL}?path=telemetry/gps/latest&device_id=${DEVICE_ID}`);
-  const json = await res.json();
-
-  if (!json.ok) return;
-
-  const { lat, lng, accuracy_m } = json.data;
-
-  if (marker) {
-    marker.setLatLng([lat, lng]);
-  } else {
-    marker = L.marker([lat, lng]).addTo(map);
-  }
-    if (isFollowing) {
-    map.flyTo([lat, lng], map.getZoom());
-    }
-  // 🔵 CIRCLE (AKURASI)
-  if (circle) {
-    circle.setLatLng([lat, lng]);
-    circle.setRadius(accuracy_m || 50);
-  } else {
-    circle = L.circle([lat, lng], {
-      radius: accuracy_m || 50,
-    }).addTo(map);
-  }
-
-  // 🧠 OPTIONAL: popup info
-  marker.bindPopup(`Akurasi: ${accuracy_m} meter`).openPopup();
+DEVICE_ID=null;
 }
 
-// ================== LOAD HISTORY ==================
-async function loadHistory() {
-  if (!DEVICE_ID) return;
-
-  const res = await fetch(`${BASE_URL}?path=telemetry/gps/history&device_id=${DEVICE_ID}&limit=50`);
-  const json = await res.json();
-
-  if (!json.ok) return;
-
-  const points = json.data.items.map(i => [i.lat, i.lng]);
-
-  if (polyline) {
-    polyline.setLatLngs(points);
-  } else {
-    polyline = L.polyline(points, { color: 'blue' }).addTo(map);
-  }
+function goHome(){
+window.location.href="index.html";
 }
 
-// ================== AUTO REFRESH ==================
-setInterval(() => {
-  loadLatest();
-  loadHistory();
-}, 5000);
+function sendGPS(lat,lng,accuracy){
+
+const params=new URLSearchParams();
+params.append("device_id",DEVICE_ID);
+params.append("ts",new Date().toISOString());
+params.append("lat",lat);
+params.append("lng",lng);
+params.append("accuracy_m",accuracy);
+
+fetch(`${BASE_URL}?path=telemetry/gps`,{
+method:"POST",
+body:params
+});
+}
+
+function startGPS(){
+
+watchId=navigator.geolocation.watchPosition(pos=>{
+
+const lat=pos.coords.latitude;
+const lng=pos.coords.longitude;
+const acc=pos.coords.accuracy;
+
+sendGPS(lat,lng,acc);
+
+},err=>console.error(err),{
+enableHighAccuracy:true
+});
+}
+
+async function loadLatest(){
+
+if(!DEVICE_ID||!isTracking)return;
+
+const res=await fetch(`${BASE_URL}?path=telemetry/gps/latest&device_id=${DEVICE_ID}`);
+const json=await res.json();
+
+if(!json.ok)return;
+
+const {lat,lng,accuracy_m}=json.data;
+
+document.getElementById("info-pos").textContent=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+document.getElementById("info-acc").textContent=`${Math.round(accuracy_m)} m`;
+
+if(marker){
+marker.setLatLng([lat,lng]);
+}else{
+marker=L.marker([lat,lng]).addTo(map);
+}
+
+if(isFollowing){
+map.flyTo([lat,lng],map.getZoom());
+}
+
+if(circle){
+circle.setLatLng([lat,lng]);
+circle.setRadius(accuracy_m||50);
+}else{
+circle=L.circle([lat,lng],{
+radius:accuracy_m||50,
+color:"#3b82f6",
+fillColor:"#93c5fd",
+fillOpacity:0.2
+}).addTo(map);
+}
+
+}
+
+async function loadHistory(){
+
+if(!DEVICE_ID||!isTracking)return;
+
+const res=await fetch(`${BASE_URL}?path=telemetry/gps/history&device_id=${DEVICE_ID}&limit=50`);
+const json=await res.json();
+
+if(!json.ok)return;
+
+const points=json.data.items.map(i=>[i.lat,i.lng]);
+
+if(polyline){
+polyline.setLatLngs(points);
+}else{
+polyline=L.polyline(points,{
+color:"#3b82f6",
+weight:3,
+opacity:.7
+}).addTo(map);
+}
+
+}
+
+setInterval(()=>{
+loadLatest();
+loadHistory();
+},5000);
 
 </script>
 
