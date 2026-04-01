@@ -3,7 +3,7 @@
    ========================================== */
 
 // --- CONFIG ---
-const BASE_URL = "https://script.google.com/macros/s/AKfycbxgSv71JmAE9pAEx93mikmyO1ML1p2b9zTSPqPKZy1807I-ve5FsMgSdTAfpDFpvwNG/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyIhTyCOmVcCoq4ooTBqh1xpLwD4j5paaU1yzqjyPPEwa6X70Ho5J8Ykkf9ZoO1Of5H/exec";
 
 const QR_DURATION_SECONDS = 120; // 1 menit
 
@@ -524,6 +524,7 @@ function listenAccelerometer(){
 // kirim data tiap 3 detik
 setInterval(sendAccelBatch,3000);
 
+let accelSamples = [];
 function sendAccelBatch(){
 
   if(accelSamples.length === 0) return;
