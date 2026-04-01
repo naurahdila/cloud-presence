@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudPresence — GPS Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --primary: #4338ca;
+  --gps: #0891b2;
+  --gps-hover: #0e7490;
+  --gps-light: rgba(8,145,178,0.08);
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --foreground: #1a1a2e;
+  --muted-fg: #6b7280;
+  --border: #e5e7eb;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --success-fg: #15803d;
+  --danger: #dc2626;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--foreground); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+/* Top bar */
+.topbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow); flex-shrink: 0; z-index: 1000; flex-wrap: wrap; }
+.logo-row { display: flex; align-items: center; gap: 8px; }
+.logo-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; }
+.logo-text { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+.logo-text span { color: var(--primary); }
+.back-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted-fg); text-decoration: none; transition: color 0.15s; }
+.back-link:hover { color: var(--foreground); }
+.topbar-sep { width: 1px; height: 24px; background: var(--border); }
+.topbar-title { font-size: 14px; font-weight: 700; color: var(--gps); }
+
+/* Add user inline */
+.add-row { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.add-row input { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 13px; outline: none; width: 160px; transition: border-color 0.15s; }
+.add-row input:focus { border-color: var(--gps); box-shadow: 0 0 0 3px rgba(8,145,178,0.12); }
+.btn-add { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; background: var(--gps); color: white; border: none; border-radius: var(--radius-sm); font-family: var(--font-sans); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-add:hover { background: var(--gps-hover); }
+
+/* User list sidebar */
+.layout { display: flex; flex: 1; overflow: hidden; }
+.sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar-header { padding: 12px 16px 8px; border-bottom: 1px solid var(--border); }
+.sidebar-title { font-size: 13px; font-weight: 700; color: var(--foreground); }
+.sidebar-count { font-size: 12px; color: var(--muted-fg); margin-top: 2px; }
+.user-list { flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.user-item { padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px solid transparent; cursor: pointer; transition: all 0.15s; }
+.user-item:hover { border-color: var(--gps); background: var(--gps-light); }
+.user-item.active { border-color: var(--gps); background: var(--gps-light); }
+.user-item-top { display: flex; align-items: center; justify-content: space-between; }
+.user-item-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.user-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; flex-shrink: 0; }
+.user-dot.live { background: var(--success); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.3); } 50% { box-shadow: 0 0 0 5px rgba(22,163,74,0); } }
+.user-item-coords { font-family: var(--font-mono); font-size: 10px; color: var(--muted-fg); margin-top: 3px; }
+.user-item-ts { font-size: 10px; color: var(--muted-fg); margin-top: 2px; }
+.user-remove { width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(220,38,38,0.1); color: var(--danger); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.user-remove:hover { background: rgba(220,38,38,0.2); }
+.sidebar-empty { padding: 24px 16px; text-align: center; font-size: 12px; color: var(--muted-fg); }
+
+/* Refresh badge */
+.refresh-badge { display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--success-bg); color: var(--success-fg); border-radius: 100px; font-size: 11px; font-weight: 600; }
+.refresh-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 1.5s ease-in-out infinite; }
+
+/* Map */
+#map { flex: 1; z-index: 1; }
+
+@media (max-width: 600px) {
+  .sidebar { width: 100%; height: 160px; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; }
+  .layout { flex-direction: column; }
+  .user-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 8px; gap: 6px; }
+  .user-item { min-width: 160px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo-row">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+    </div>
+    <div class="logo-text">Cloud<span>Presence</span></div>
+  </div>
+  <div class="topbar-sep"></div>
+  <a href="../index.html" class="back-link">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    Menu
+  </a>
+  <div class="topbar-sep"></div>
+  <span class="topbar-title">🗺️ GPS Monitor</span>
+  <div class="refresh-badge"><span class="refresh-pulse"></span> Live</div>
+  <div class="add-row">
+    <input type="text" id="input-username" placeholder="Nama user..." onkeydown="if(event.key==='Enter') addUser()">
+    <button class="btn-add" onclick="addUser()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      Tambah
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">User Dipantau</div>
+      <div class="sidebar-count" id="user-count">0 user</div>
+    </div>
+    <div class="user-list" id="user-list">
+      <div class="sidebar-empty">Tambahkan nama user di atas</div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+</div>
+
+<script>
+const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
+const REFRESH_MS    = 5000;
+
+// Color palette for different users
+const USER_COLORS = ["#0891b2","#7c3aed","#dc2626","#16a34a","#d97706","#db2777","#2563eb","#059669"];
+
+let watchedUsers = []; // {name, color, marker, polyline, lastLat, lastLng, lastTs, itemEl}
+let map;
+let refreshTimer;
+
+// ─── INIT MAP ───
+map = L.map("map").setView([-7.2575, 112.7521], 14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+// ─── ADD USER ───
+function addUser() {
+  const input = document.getElementById("input-username");
+  const name  = input.value.trim();
+  if (!name || watchedUsers.find(u => u.name === name)) { input.value = ""; return; }
+
+  const color = USER_COLORS[watchedUsers.length % USER_COLORS.length];
+  const user  = { name, color, marker: null, polyline: null, lastLat: null, lastLng: null, lastTs: null, itemEl: null };
+  watchedUsers.push(user);
+  input.value = "";
+  renderSidebar();
+  updateCount();
+  fetchUserLatest(user);
+  fetchUserHistory(user);
+}
+
+function removeUser(name) {
+  const user = watchedUsers.find(u => u.name === name);
+  if (user) {
+    if (user.marker)   map.removeLayer(user.marker);
+    if (user.polyline) map.removeLayer(user.polyline);
+  }
+  watchedUsers = watchedUsers.filter(u => u.name !== name);
+  renderSidebar();
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById("user-count").innerText = watchedUsers.length + " user";
+}
+
+// ─── SIDEBAR ───
+function renderSidebar() {
+  const list = document.getElementById("user-list");
+  if (watchedUsers.length === 0) {
+    list.innerHTML = '<div class="sidebar-empty">Tambahkan nama user di atas</div>';
+    return;
+  }
+  list.innerHTML = "";
+  watchedUsers.forEach(user => {
+    const isLive = user.lastTs && (Date.now() - new Date(user.lastTs).getTime()) < 15000;
+    const div    = document.createElement("div");
+    div.className = "user-item";
+    div.id        = "item-" + sanitize(user.name);
+    div.innerHTML = `
+      <div class="user-item-top">
+        <div class="user-item-name">
+          <span class="user-dot ${isLive ? 'live' : ''}" style="background:${isLive ? user.color : '#9ca3af'}"></span>
+          <span>${user.name}</span>
+        </div>
+        <button class="user-remove" onclick="event.stopPropagation();removeUser('${user.name}')">✕</button>
+      </div>
+      <div class="user-item-coords" id="coords-${sanitize(user.name)}">${user.lastLat ? user.lastLat.toFixed(5) + ", " + user.lastLng.toFixed(5) : "Menunggu data..."}</div>
+      <div class="user-item-ts" id="ts-${sanitize(user.name)}">${user.lastTs ? "Update: " + new Date(user.lastTs).toLocaleTimeString("id-ID") : "-"}</div>`;
+    div.onclick = () => {
+      if (user.lastLat) map.flyTo([user.lastLat, user.lastLng], 16);
+    };
+    list.appendChild(div);
+    user.itemEl = div;
+  });
+}
+
+function updateSidebarUser(user) {
+  const isLive    = user.lastTs && (Date.now() - new Date(user.lastTs).getTime()) < 15000;
+  const coordsEl  = document.getElementById("coords-" + sanitize(user.name));
+  const tsEl      = document.getElementById("ts-" + sanitize(user.name));
+  const dotEl     = user.itemEl ? user.itemEl.querySelector(".user-dot") : null;
+  if (coordsEl && user.lastLat) coordsEl.innerText = user.lastLat.toFixed(5) + ", " + user.lastLng.toFixed(5);
+  if (tsEl && user.lastTs)      tsEl.innerText     = "Update: " + new Date(user.lastTs).toLocaleTimeString("id-ID");
+  if (dotEl) {
+    dotEl.className = "user-dot " + (isLive ? "live" : "");
+    dotEl.style.background = isLive ? user.color : "#9ca3af";
+  }
+}
+
+// ─── FETCH LATEST ───
+async function fetchUserLatest(user) {
+  try {
+    const res  = await fetch(TELEMETRY_URL + "?path=telemetry/gps/latest&device_id=" + encodeURIComponent(user.name));
+    const json = await res.json();
+    if (!json.ok || !json.data) return;
+    const { lat, lng } = json.data;
+    user.lastLat = parseFloat(lat);
+    user.lastLng = parseFloat(lng);
+    user.lastTs  = json.data.ts;
+
+    // Custom colored marker
+    const icon = L.divIcon({
+      className: "",
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${user.color};border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    if (user.marker) {
+      user.marker.setLatLng([user.lastLat, user.lastLng]);
+    } else {
+      user.marker = L.marker([user.lastLat, user.lastLng], { icon })
+        .addTo(map)
+        .bindPopup(`<b>${user.name}</b><br>${user.lastLat.toFixed(5)}, ${user.lastLng.toFixed(5)}`);
+    }
+
+    updateSidebarUser(user);
+  } catch(err) { /* silent */ }
+}
+
+// ─── FETCH HISTORY ───
+async function fetchUserHistory(user) {
+  try {
+    const res  = await fetch(TELEMETRY_URL + "?path=telemetry/gps/history&device_id=" + encodeURIComponent(user.name) + "&limit=50");
+    const json = await res.json();
+    if (!json.ok || !json.data || json.data.items.length === 0) return;
+    const points = json.data.items.map(i => [parseFloat(i.lat), parseFloat(i.lng)]);
+    if (user.polyline) {
+      user.polyline.setLatLngs(points);
+    } else {
+      user.polyline = L.polyline(points, { color: user.color, weight: 2.5, opacity: 0.7 }).addTo(map);
+    }
+  } catch(err) { /* silent */ }
+}
+
+// ─── FETCH ALL ───
+async function fetchAll() {
+  for (const user of watchedUsers) {
+    await fetchUserLatest(user);
+    await fetchUserHistory(user);
+  }
+}
+
+// ─── HELPERS ───
+function sanitize(name) { return name.replace(/[^a-zA-Z0-9]/g, "_"); }
+
+// Start refresh
+refreshTimer = setInterval(fetchAll, REFRESH_MS);
+</script>
+</body>
+</html>

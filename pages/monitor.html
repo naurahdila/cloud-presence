@@ -3,21 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CloudPresence — Monitor</title>
+  <title>CloudPresence — Accelerometer Monitor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root {
       --primary:      #4338ca;
       --sensor:       #7c3aed;
       --sensor-light: rgba(124,58,237,0.08);
-      --gps:          #0891b2;
-      --gps-light:    rgba(8,145,178,0.08);
       --bg:           #f0f2f8;
       --surface:      #ffffff;
       --foreground:   #1a1a2e;
@@ -76,11 +72,10 @@
     .logo-text span { color: var(--primary); }
 
     .topbar-badge {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11px; font-weight: 700;
       padding: 3px 10px;
-      background: rgba(67,56,202,0.1);
-      color: var(--primary);
+      background: var(--sensor-light);
+      color: var(--sensor);
       border-radius: 100px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -89,11 +84,8 @@
     .topbar-right { display: flex; align-items: center; gap: 12px; }
 
     .refresh-info {
-      font-size: 12px;
-      color: var(--muted-fg);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 12px; color: var(--muted-fg);
+      display: flex; align-items: center; gap: 6px;
     }
 
     .pulse-dot {
@@ -102,7 +94,6 @@
       border-radius: 50%;
       animation: pulse 2s ease-in-out infinite;
     }
-
     .pulse-dot.off { background: #9ca3af; animation: none; }
 
     @keyframes pulse {
@@ -110,215 +101,146 @@
       50%       { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
     }
 
-    /* ── SETUP PANEL ── */
+    /* ── SETUP OVERLAY ── */
     .setup-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.4);
       backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      padding: 20px;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 20px;
     }
 
     .setup-card {
       background: var(--surface);
-      border-radius: 16px;
-      padding: 32px;
-      width: 100%;
-      max-width: 400px;
+      border-radius: 16px; padding: 32px;
+      width: 100%; max-width: 400px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     }
 
     .setup-icon {
       width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--primary), #6366f1);
+      background: linear-gradient(135deg, var(--sensor), #a855f7);
       border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      color: white;
-      margin: 0 auto 16px;
+      color: white; margin: 0 auto 16px;
     }
 
     .setup-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; }
     .setup-sub   { font-size: 13px; color: var(--muted-fg); text-align: center; margin-bottom: 24px; }
 
     .setup-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 6px;
+      display: block; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
     }
 
     .setup-input {
-      width: 100%;
-      padding: 11px 14px;
+      width: 100%; padding: 11px 14px;
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: var(--font-sans); font-size: 14px;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
       margin-bottom: 12px;
     }
-
     .setup-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(67,56,202,0.12);
+      border-color: var(--sensor);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
     }
 
     .setup-btn {
-      width: 100%;
-      padding: 13px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
+      width: 100%; padding: 13px;
+      background: var(--sensor); color: white;
+      border: none; border-radius: var(--radius-sm);
+      font-family: var(--font-sans); font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
     }
-
-    .setup-btn:hover { background: #3730a3; }
+    .setup-btn:hover { background: #6d28d9; }
 
     /* ── LAYOUT ── */
     .main {
       padding: 24px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto auto;
       gap: 16px;
-      max-width: 1400px;
+      max-width: 1100px;
       margin: 0 auto;
     }
+    @media (max-width: 800px) { .main { grid-template-columns: 1fr; } }
 
-    @media (max-width: 900px) {
-      .main { grid-template-columns: 1fr; }
-    }
-
-    /* ── CARDS ── */
     .card {
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
     }
-
     .card.full-row { grid-column: 1 / -1; }
 
     .card-header {
       padding: 16px 20px 12px;
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
     }
-
     .card-header-left { display: flex; align-items: center; gap: 8px; }
-
     .card-title { font-size: 15px; font-weight: 700; }
     .card-desc  { font-size: 12px; color: var(--muted-fg); margin-top: 1px; }
-
-    .card-body { padding: 16px 20px 20px; }
+    .card-body  { padding: 16px 20px 20px; }
 
     /* ── DEVICE BANNER ── */
     .device-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      background: linear-gradient(90deg, rgba(67,56,202,0.06), rgba(99,102,241,0.04));
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, rgba(124,58,237,0.06), rgba(168,85,247,0.04));
       border-bottom: 1px solid var(--border);
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 12px; flex-wrap: wrap;
     }
-
     .device-info { display: flex; align-items: center; gap: 10px; }
-
     .device-avatar {
-      width: 36px; height: 36px;
-      background: var(--primary);
-      color: white;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800;
-      font-size: 14px;
-      flex-shrink: 0;
+      width: 36px; height: 36px; background: var(--sensor); color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; flex-shrink: 0;
     }
-
     .device-name { font-size: 14px; font-weight: 700; }
     .device-sub  { font-size: 12px; color: var(--muted-fg); }
 
     .device-stats { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-
     .stat-item { text-align: center; }
-    .stat-val  { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--primary); line-height: 1; }
+    .stat-val  { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--sensor); line-height: 1; }
     .stat-lbl  { font-size: 10px; color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
     .change-btn {
       display: flex; align-items: center; gap: 6px;
       padding: 7px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: white;
-      color: var(--muted-fg);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: white; color: var(--muted-fg);
+      font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
-    .change-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .change-btn:hover { border-color: var(--sensor); color: var(--sensor); }
 
-    /* ── STATUS BADGE ── */
+    /* ── BADGE ── */
     .badge {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px;
-      border-radius: 100px;
+      padding: 4px 10px; border-radius: 100px;
       font-size: 11px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.03em;
     }
-    .badge-ok      { background: var(--success-bg); color: var(--success-fg); }
-    .badge-warn    { background: var(--warning-bg); color: #92400e; }
-    .badge-error   { background: var(--danger-bg);  color: var(--danger-fg); }
-    .badge-idle    { background: #e8e8ed; color: var(--muted-fg); }
+    .badge-ok    { background: var(--success-bg); color: var(--success-fg); }
+    .badge-warn  { background: var(--warning-bg); color: #92400e; }
+    .badge-error { background: var(--danger-bg);  color: var(--danger-fg); }
+    .badge-idle  { background: #e8e8ed; color: var(--muted-fg); }
 
     /* ── AXIS GRID ── */
-    .axis-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
+    .axis-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
     .axis-card {
       background: var(--sensor-light);
       border: 1.5px solid rgba(124,58,237,0.15);
       border-radius: var(--radius-sm);
-      padding: 12px 8px;
-      text-align: center;
+      padding: 12px 8px; text-align: center;
     }
+    .axis-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sensor); margin-bottom: 4px; }
+    .axis-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--foreground); line-height: 1; }
+    .axis-unit  { font-size: 10px; color: var(--muted-fg); margin-top: 2px; }
 
-    .axis-label {
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--sensor); margin-bottom: 4px;
-    }
-
-    .axis-value {
-      font-family: var(--font-mono);
-      font-size: 22px; font-weight: 700;
-      color: var(--foreground); line-height: 1;
-    }
-
-    .axis-unit { font-size: 10px; color: var(--muted-fg); margin-top: 2px; }
-
-    /* Magnitude bar */
+    /* ── MAGNITUDE ── */
     .mag-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .mag-label { font-size: 12px; color: var(--muted-fg); min-width: 70px; }
     .mag-track { flex: 1; height: 6px; background: #e8e8ed; border-radius: 100px; overflow: hidden; }
@@ -326,52 +248,31 @@
     .mag-val   { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--sensor); min-width: 42px; text-align: right; }
 
     /* ── CHART ── */
-    .chart-wrap { position: relative; width: 100%; height: 180px; }
+    .chart-wrap { position: relative; width: 100%; height: 200px; }
 
-    /* ── INFO ROWS ── */
+    /* ── INFO ROW ── */
     .info-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 9px 12px;
-      background: rgba(0,0,0,0.02);
-      border-radius: var(--radius-sm);
-      margin-bottom: 6px;
-      font-size: 13px;
+      padding: 9px 12px; background: rgba(0,0,0,0.02);
+      border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 13px;
     }
     .info-label { color: var(--muted-fg); }
     .info-value { font-weight: 600; }
 
-    /* ── COORD GRID ── */
-    .coord-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .coord-item {
-      background: var(--gps-light);
-      border: 1.5px solid rgba(8,145,178,0.15);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
+    /* ── STALE BANNER ── */
+    .stale-banner {
+      display: none; align-items: center; gap: 8px;
+      padding: 9px 14px; background: var(--warning-bg); color: #92400e;
+      border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+      margin-bottom: 12px;
     }
-    .coord-item.full { grid-column: 1 / -1; }
-    .coord-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gps); margin-bottom: 3px; }
-    .coord-value { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
-
-    /* ── MAP ── */
-    #map {
-      width: 100%;
-      height: 300px;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      border: 1.5px solid var(--border);
-      z-index: 0;
-    }
+    .stale-banner.show { display: flex; }
 
     /* ── LOG ── */
-    .log-list {
-      max-height: 160px;
-      overflow-y: auto;
-      display: flex; flex-direction: column; gap: 4px;
-    }
+    .log-list { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
     .log-item {
       display: flex; align-items: flex-start; gap: 8px;
-      padding: 6px 10px;
-      background: rgba(0,0,0,0.02);
+      padding: 6px 10px; background: rgba(0,0,0,0.02);
       border-radius: 6px; font-size: 12px;
     }
     .log-time { color: var(--muted-fg); font-family: var(--font-mono); font-size: 11px; flex-shrink: 0; }
@@ -380,87 +281,56 @@
     .log-item.error   .log-msg { color: var(--danger); }
     .log-item.warn    .log-msg { color: var(--warning); }
     .log-empty { font-size: 12px; color: var(--muted-fg); text-align: center; padding: 20px; }
-
     .log-list::-webkit-scrollbar { width: 4px; }
     .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
 
-    /* ── STALE OVERLAY ── */
-    .stale-banner {
-      display: none;
-      align-items: center; gap: 8px;
-      padding: 9px 14px;
-      background: var(--warning-bg);
-      color: #92400e;
-      border-radius: var(--radius-sm);
-      font-size: 12px; font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .stale-banner.show { display: flex; }
-
-    /* ── SPINNER ── */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spin { animation: spin 1s linear infinite; display: inline-block; }
-
-    /* ── REFRESH BTN ── */
+    /* ── BUTTONS ── */
     .refresh-btn {
       display: flex; align-items: center; gap: 6px;
-      padding: 7px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: white;
-      color: var(--muted-fg);
-      font-family: var(--font-sans);
-      font-size: 12px; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      padding: 7px 14px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); background: white; color: var(--muted-fg);
+      font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
     }
-    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .refresh-btn:hover { border-color: var(--sensor); color: var(--sensor); }
 
-    /* ── FOOTER ── */
+    .interval-select {
+      padding: 6px 10px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+      color: var(--foreground); background: white; cursor: pointer; outline: none;
+    }
+    .interval-select:focus { border-color: var(--sensor); }
+
     .app-footer { text-align: center; font-size: 11px; color: var(--muted-fg); padding: 20px 0 28px; }
 
-    /* ── INTERVAL SELECT ── */
-    .interval-select {
-      padding: 6px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 12px; font-weight: 600;
-      color: var(--foreground);
-      background: white;
-      cursor: pointer;
-      outline: none;
-    }
-    .interval-select:focus { border-color: var(--primary); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
   </style>
 </head>
 
 <body>
 
-<!-- ╔══════════════════════════════════╗ -->
-<!-- ║  SETUP OVERLAY                  ║ -->
-<!-- ╚══════════════════════════════════╝ -->
+<!-- SETUP OVERLAY -->
 <div class="setup-overlay" id="setup-overlay">
   <div class="setup-card">
     <div class="setup-icon">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
       </svg>
     </div>
-    <h2 class="setup-title">Monitor Tracking</h2>
+    <h2 class="setup-title">Accelerometer Monitor</h2>
     <p class="setup-sub">Masukkan Device ID (nama) perangkat HP yang ingin dipantau</p>
     <label class="setup-label" for="setup-device-id">Device ID</label>
     <input type="text" id="setup-device-id" class="setup-input" placeholder="Contoh: budi123"
       onkeydown="if(event.key==='Enter') startMonitor()" />
-    <button class="setup-btn" onclick="startMonitor()">
-      Mulai Monitor
-    </button>
+    <button class="setup-btn" onclick="startMonitor()">Mulai Monitor</button>
   </div>
 </div>
 
-<!-- ╔══════════════════════════════════╗ -->
-<!-- ║  TOP BAR                        ║ -->
-<!-- ╚══════════════════════════════════╝ -->
+<!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
     <div class="logo-icon">
@@ -469,7 +339,7 @@
       </svg>
     </div>
     <h1 class="logo-text">Cloud<span>Presence</span></h1>
-    <span class="topbar-badge">Monitor</span>
+    <span class="topbar-badge">Accelerometer Monitor</span>
   </div>
   <div class="topbar-right">
     <div class="refresh-info">
@@ -484,30 +354,27 @@
     </select>
     <button class="refresh-btn" onclick="manualRefresh()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="refresh-icon">
-        <path d="M21 12a9 9 0 1 1-2.637-6.364"/>
-        <path d="M21 4v4h-4"/>
+        <path d="M21 12a9 9 0 1 1-2.637-6.364"/><path d="M21 4v4h-4"/>
       </svg>
       Refresh
     </button>
     <button class="change-btn" onclick="changeDevice()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+        <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+        <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
       </svg>
-      Ganti Device
+      Swap Device
     </button>
   </div>
 </div>
 
-<!-- ╔══════════════════════════════════╗ -->
-<!-- ║  DEVICE BANNER                  ║ -->
-<!-- ╚══════════════════════════════════╝ -->
+<!-- DEVICE BANNER -->
 <div class="device-banner" id="device-banner" style="display:none;">
   <div class="device-info">
     <div class="device-avatar" id="device-avatar">?</div>
     <div>
       <div class="device-name" id="device-name-display">—</div>
-      <div class="device-sub">Memantau data sensor secara real-time</div>
+      <div class="device-sub">Memantau accelerometer secara real-time</div>
     </div>
   </div>
   <div class="device-stats">
@@ -517,25 +384,19 @@
     </div>
     <div class="stat-item">
       <div class="stat-val" id="stat-accel-count">—</div>
-      <div class="stat-lbl">Accel (sampel)</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val" id="stat-gps-count">—</div>
-      <div class="stat-lbl">GPS (titik)</div>
+      <div class="stat-lbl">Sampel</div>
     </div>
   </div>
 </div>
 
-<!-- ╔══════════════════════════════════╗ -->
-<!-- ║  MAIN GRID                      ║ -->
-<!-- ╚══════════════════════════════════╝ -->
+<!-- MAIN GRID -->
 <div class="main" id="main-grid" style="display:none;">
 
-  <!-- ═══ ACCELEROMETER CARD ═══ -->
-  <div class="card">
+  <!-- ACCELEROMETER CARD -->
+  <div class="card full-row">
     <div class="card-header">
       <div class="card-header-left">
-        <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2">
           <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
           <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
           <line x1="12" y1="19" x2="12" y2="22"/>
@@ -548,13 +409,9 @@
       <span class="badge badge-idle" id="accel-status-badge">Menunggu...</span>
     </div>
     <div class="card-body">
-
-      <!-- Stale warning -->
       <div class="stale-banner" id="accel-stale">
         ⚠️ Data accelerometer mungkin sudah tidak aktif (tidak ada update baru)
       </div>
-
-      <!-- X Y Z -->
       <div class="axis-grid">
         <div class="axis-card">
           <div class="axis-label">X</div>
@@ -572,20 +429,14 @@
           <div class="axis-unit">m/s²</div>
         </div>
       </div>
-
-      <!-- Magnitude -->
       <div class="mag-row">
         <span class="mag-label">Magnitude</span>
         <div class="mag-track"><div class="mag-fill" id="mag-fill"></div></div>
         <span class="mag-val" id="mag-val">—</span>
       </div>
-
-      <!-- Chart -->
       <div class="chart-wrap">
         <canvas id="accel-chart"></canvas>
       </div>
-
-      <!-- Info -->
       <div style="margin-top:14px;">
         <div class="info-row">
           <span class="info-label">Update terakhir</span>
@@ -596,91 +447,10 @@
           <span class="info-value" id="accel-ts">—</span>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- ═══ GPS INFO CARD ═══ -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-header-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2">
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
-        <div>
-          <div class="card-title">GPS Tracking</div>
-          <div class="card-desc">Posisi real-time dari HP</div>
-        </div>
-      </div>
-      <span class="badge badge-idle" id="gps-status-badge">Menunggu...</span>
-    </div>
-    <div class="card-body">
-
-      <!-- Stale warning -->
-      <div class="stale-banner" id="gps-stale">
-        ⚠️ Data GPS mungkin sudah tidak aktif (tidak ada update baru)
-      </div>
-
-      <!-- Coords -->
-      <div class="coord-grid">
-        <div class="coord-item">
-          <div class="coord-label">Latitude</div>
-          <div class="coord-value" id="gps-lat">—</div>
-        </div>
-        <div class="coord-item">
-          <div class="coord-label">Longitude</div>
-          <div class="coord-value" id="gps-lng">—</div>
-        </div>
-        <div class="coord-item">
-          <div class="coord-label">Akurasi</div>
-          <div class="coord-value" id="gps-acc">—</div>
-        </div>
-        <div class="coord-item">
-          <div class="coord-label">Kecepatan</div>
-          <div class="coord-value" id="gps-speed">—</div>
-        </div>
-        <div class="coord-item full">
-          <div class="coord-label">Timestamp</div>
-          <div class="coord-value" style="font-size:12px;" id="gps-ts">—</div>
-        </div>
-      </div>
-
-      <!-- GPS Stats -->
-      <div class="info-row">
-        <span class="info-label">Total titik history</span>
-        <span class="info-value" id="gps-history-count">—</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Update terakhir</span>
-        <span class="info-value" id="gps-last-update">—</span>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ═══ MAP CARD (full row) ═══ -->
-  <div class="card full-row">
-    <div class="card-header">
-      <div class="card-header-left">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2">
-          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
-          <line x1="9" y1="3" x2="9" y2="18"/>
-          <line x1="15" y1="6" x2="15" y2="21"/>
-        </svg>
-        <div>
-          <div class="card-title">Peta Tracking</div>
-          <div class="card-desc">Marker posisi terkini + jejak rute</div>
-        </div>
-      </div>
-      <span class="badge badge-idle" id="map-status-badge">Menunggu lokasi...</span>
-    </div>
-    <div class="card-body" style="padding-bottom:20px;">
-      <div id="map"></div>
-    </div>
-  </div>
-
-  <!-- ═══ ACTIVITY LOG ═══ -->
+  <!-- LOG -->
   <div class="card full-row">
     <div class="card-header">
       <div class="card-header-left">
@@ -707,84 +477,21 @@
 </div>
 
 <div class="app-footer" id="app-footer" style="display:none;">
-  CloudPresence v1.0 — Monitor Dashboard
+  CloudPresence v1.0 — Accelerometer Monitor
 </div>
 
 <script>
-// ═══════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════
 const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
 
-let DEVICE_ID       = "";
-let pollTimer       = null;
-let pollInterval    = 5000;
-let totalRefreshes  = 0;
-let lastAccelTs     = null;
-let lastGpsTs       = null;
+let DEVICE_ID      = "";
+let pollTimer      = null;
+let pollInterval   = 5000;
+let totalRefreshes = 0;
+let accelChart     = null;
 
-// ═══════════════════════════════════════════
-// MAP
-// ═══════════════════════════════════════════
-let leafletMap   = null;
-let gpsMarker    = null;
-let gpsPolyline  = null;
-let mapInitialized = false;
-
-function initMap() {
-  if (mapInitialized) return;
-  leafletMap = L.map('map', { zoomControl: true }).setView([-7.2575, 112.7521], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(leafletMap);
-  mapInitialized = true;
-}
-
-function updateMap(lat, lng, historyPoints) {
-  if (!mapInitialized) initMap();
-
-  const latlng = [lat, lng];
-
-  if (!gpsMarker) {
-    gpsMarker = L.marker(latlng, {
-      icon: L.divIcon({
-        className: '',
-        html: `<div style="
-          width:16px;height:16px;
-          background:#0891b2;
-          border:3px solid white;
-          border-radius:50%;
-          box-shadow:0 2px 6px rgba(0,0,0,0.3)
-        "></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      })
-    }).addTo(leafletMap).bindPopup(DEVICE_ID);
-  } else {
-    gpsMarker.setLatLng(latlng);
-  }
-
-  leafletMap.setView(latlng, leafletMap.getZoom());
-
-  if (historyPoints && historyPoints.length > 1) {
-    const pts = historyPoints.map(p => [p.lat, p.lng]);
-    if (!gpsPolyline) {
-      gpsPolyline = L.polyline(pts, { color: '#0891b2', weight: 3, opacity: 0.7 }).addTo(leafletMap);
-    } else {
-      gpsPolyline.setLatLngs(pts);
-    }
-  }
-
-  document.getElementById("map-status-badge").className = "badge badge-ok";
-  document.getElementById("map-status-badge").textContent = "Live";
-}
-
-// ═══════════════════════════════════════════
-// CHART SETUP
-// ═══════════════════════════════════════════
-let accelChart = null;
-
+// ── CHART ──
 function initChart() {
+  if (accelChart) { accelChart.destroy(); accelChart = null; }
   const ctx = document.getElementById("accel-chart").getContext("2d");
   accelChart = new Chart(ctx, {
     type: "line",
@@ -797,13 +504,9 @@ function initChart() {
       ]
     },
     options: {
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
+      animation: false, responsive: true, maintainAspectRatio: false,
       interaction: { intersect: false },
-      plugins: {
-        legend: { position: "top", labels: { font: { family: "'Inter', sans-serif", size: 11 }, boxWidth: 12, padding: 8 } }
-      },
+      plugins: { legend: { position: "top", labels: { font: { family: "'Inter', sans-serif", size: 11 }, boxWidth: 12, padding: 8 } } },
       scales: {
         x: { display: false },
         y: { min: -25, max: 25, grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 10 }, maxTicksLimit: 5 } }
@@ -814,13 +517,12 @@ function initChart() {
 
 function pushChart(samples) {
   if (!accelChart || !samples || samples.length === 0) return;
-  // Only push the latest sample to chart for smooth rolling display
   const s = samples[samples.length - 1];
-  const label = new Date(s.t).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const label = new Date(s.t).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
   accelChart.data.labels.push(label);
-  accelChart.data.datasets[0].data.push(s.x);
-  accelChart.data.datasets[1].data.push(s.y);
-  accelChart.data.datasets[2].data.push(s.z);
+  accelChart.data.datasets[0].data.push(parseFloat(s.x));
+  accelChart.data.datasets[1].data.push(parseFloat(s.y));
+  accelChart.data.datasets[2].data.push(parseFloat(s.z));
   if (accelChart.data.labels.length > 40) {
     accelChart.data.labels.shift();
     accelChart.data.datasets.forEach(d => d.data.shift());
@@ -828,9 +530,7 @@ function pushChart(samples) {
   accelChart.update("none");
 }
 
-// ═══════════════════════════════════════════
-// SETUP / IDENTITY
-// ═══════════════════════════════════════════
+// ── SETUP ──
 function startMonitor() {
   const val = document.getElementById("setup-device-id").value.trim();
   if (!val) {
@@ -838,64 +538,43 @@ function startMonitor() {
     setTimeout(() => { document.getElementById("setup-device-id").style.borderColor = ""; }, 1500);
     return;
   }
-
   DEVICE_ID = val;
-
-  // UI
-  document.getElementById("setup-overlay").style.display   = "none";
-  document.getElementById("device-banner").style.display   = "flex";
-  document.getElementById("main-grid").style.display       = "grid";
-  document.getElementById("app-footer").style.display      = "block";
-
-  const initial = DEVICE_ID.charAt(0).toUpperCase();
-  document.getElementById("device-avatar").textContent        = initial;
-  document.getElementById("device-name-display").textContent  = DEVICE_ID;
-
+  document.getElementById("setup-overlay").style.display  = "none";
+  document.getElementById("device-banner").style.display  = "flex";
+  document.getElementById("main-grid").style.display      = "grid";
+  document.getElementById("app-footer").style.display     = "block";
+  document.getElementById("device-avatar").textContent       = DEVICE_ID.charAt(0).toUpperCase();
+  document.getElementById("device-name-display").textContent = DEVICE_ID;
   initChart();
-  initMap();
-
   startPolling();
   addLog("success", "Mulai memantau device: " + DEVICE_ID);
 }
 
 function changeDevice() {
   stopPolling();
-  DEVICE_ID = "";
-  lastAccelTs = null;
-  lastGpsTs   = null;
-  totalRefreshes = 0;
-
+  DEVICE_ID = ""; totalRefreshes = 0;
   document.getElementById("setup-device-id").value = "";
   document.getElementById("setup-overlay").style.display = "flex";
   document.getElementById("device-banner").style.display = "none";
   document.getElementById("main-grid").style.display     = "none";
   document.getElementById("app-footer").style.display    = "none";
-
-  document.getElementById("live-dot").className     = "pulse-dot off";
-  document.getElementById("refresh-status").textContent = "Tidak aktif";
-
-  // reset map marker & polyline
-  if (gpsMarker)   { leafletMap.removeLayer(gpsMarker);   gpsMarker   = null; }
-  if (gpsPolyline) { leafletMap.removeLayer(gpsPolyline); gpsPolyline = null; }
-
-  // reset chart
+  document.getElementById("live-dot").className          = "pulse-dot off";
+  document.getElementById("refresh-status").textContent  = "Tidak aktif";
   if (accelChart) {
     accelChart.data.labels = [];
     accelChart.data.datasets.forEach(d => d.data = []);
     accelChart.update("none");
   }
-
   clearLog();
+  setTimeout(() => document.getElementById("setup-device-id").focus(), 100);
 }
 
-// ═══════════════════════════════════════════
-// POLLING
-// ═══════════════════════════════════════════
+// ── POLLING ──
 function startPolling() {
   stopPolling();
-  fetchAll();
-  pollTimer = setInterval(fetchAll, pollInterval);
-  document.getElementById("live-dot").className = "pulse-dot";
+  fetchAccel();
+  pollTimer = setInterval(fetchAccel, pollInterval);
+  document.getElementById("live-dot").className          = "pulse-dot";
   document.getElementById("refresh-status").textContent = "Live • setiap " + (pollInterval/1000) + "dtk";
 }
 
@@ -905,49 +584,38 @@ function stopPolling() {
 
 function changeInterval(val) {
   pollInterval = parseInt(val);
-  if (DEVICE_ID) {
-    startPolling();
-    addLog("info", "Interval polling diubah ke " + (pollInterval/1000) + " detik");
-  }
+  if (DEVICE_ID) startPolling();
 }
 
 function manualRefresh() {
   if (!DEVICE_ID) return;
   const icon = document.getElementById("refresh-icon");
   icon.classList.add("spin");
-  fetchAll().finally(() => { setTimeout(() => icon.classList.remove("spin"), 500); });
+  fetchAccel().finally(() => setTimeout(() => icon.classList.remove("spin"), 500));
 }
 
-async function fetchAll() {
+// ── FETCH ACCEL ──
+async function fetchAccel() {
   if (!DEVICE_ID) return;
   totalRefreshes++;
   document.getElementById("stat-total-refresh").textContent = totalRefreshes;
-  await Promise.allSettled([fetchAccel(), fetchGPS()]);
-}
 
-// ═══════════════════════════════════════════
-// FETCH ACCELEROMETER
-// ═══════════════════════════════════════════
-async function fetchAccel() {
   try {
-    const url = `${TELEMETRY_URL}?path=telemetry/accel/latest&device_id=${encodeURIComponent(DEVICE_ID)}`;
+    const url  = `${TELEMETRY_URL}?path=telemetry/accel/latest&device_id=${encodeURIComponent(DEVICE_ID)}`;
     const res  = await fetch(url);
     const json = await res.json();
 
     if (!json.ok) {
       addLog("warn", "Accel: " + (json.message || "Tidak ada data"));
-      setBadge("accel", "warn", "Tidak ada data");
+      setBadge("warn", "Tidak ada data");
       return;
     }
 
-    const d = json.data;
-
-    // Check staleness (>30s)
-    const ts = new Date(d.ts || d.t);
+    const d   = json.data;
+    const ts  = new Date(d.ts || d.t);
     const age = (Date.now() - ts.getTime()) / 1000;
     document.getElementById("accel-stale").classList.toggle("show", age > 30);
 
-    // Update values — use latest sample if available, else top-level
     let x = d.x, y = d.y, z = d.z;
     if (d.samples && d.samples.length > 0) {
       const latest = d.samples[d.samples.length - 1];
@@ -965,97 +633,25 @@ async function fetchAccel() {
     document.getElementById("val-x").textContent = x.toFixed(2);
     document.getElementById("val-y").textContent = y.toFixed(2);
     document.getElementById("val-z").textContent = z.toFixed(2);
-
-    const magPct = Math.min((mag / 30) * 100, 100);
-    document.getElementById("mag-fill").style.width = magPct + "%";
+    document.getElementById("mag-fill").style.width = Math.min((mag/30)*100, 100) + "%";
     document.getElementById("mag-val").textContent  = mag.toFixed(2);
-
-    const now = new Date().toLocaleTimeString("id-ID");
-    document.getElementById("accel-last-update").textContent = now;
+    document.getElementById("accel-last-update").textContent = new Date().toLocaleTimeString("id-ID");
     document.getElementById("accel-ts").textContent = ts.toLocaleString("id-ID");
+    document.getElementById("stat-accel-count").textContent  = d.sample_count || (d.samples ? d.samples.length : "—");
 
-    // Stat
-    document.getElementById("stat-accel-count").textContent = d.sample_count || (d.samples ? d.samples.length : "—");
-
-    setBadge("accel", age > 30 ? "warn" : "ok", age > 30 ? "Stale" : "Live");
-    lastAccelTs = ts;
-    addLog("success", `Accel: X=${x.toFixed(2)} Y=${y.toFixed(2)} Z=${z.toFixed(2)}`);
+    setBadge(age > 30 ? "warn" : "ok", age > 30 ? "Stale" : "Live");
+    addLog("success", `X=${x.toFixed(2)} Y=${y.toFixed(2)} Z=${z.toFixed(2)} | ${age.toFixed(0)}s lalu`);
 
   } catch(err) {
-    setBadge("accel", "error", "Error");
-    addLog("error", "Gagal ambil accel: " + err.message);
+    setBadge("error", "Error");
+    addLog("error", "Gagal ambil data: " + err.message);
   }
 }
 
-// ═══════════════════════════════════════════
-// FETCH GPS
-// ═══════════════════════════════════════════
-async function fetchGPS() {
-  try {
-    // Fetch latest + history in parallel
-    const [latestRes, historyRes] = await Promise.allSettled([
-      fetch(`${TELEMETRY_URL}?path=telemetry/gps/latest&device_id=${encodeURIComponent(DEVICE_ID)}`),
-      fetch(`${TELEMETRY_URL}?path=telemetry/gps/history&device_id=${encodeURIComponent(DEVICE_ID)}&limit=50`)
-    ]);
-
-    let historyPoints = [];
-
-    // History
-    if (historyRes.status === "fulfilled") {
-      const hjson = await historyRes.value.json();
-      if (hjson.ok && hjson.data && hjson.data.items) {
-        historyPoints = hjson.data.items;
-        document.getElementById("gps-history-count").textContent = historyPoints.length + " titik";
-        document.getElementById("stat-gps-count").textContent    = historyPoints.length;
-      }
-    }
-
-    // Latest
-    if (latestRes.status === "fulfilled") {
-      const json = await latestRes.value.json();
-
-      if (!json.ok) {
-        addLog("warn", "GPS: " + (json.message || "Tidak ada data"));
-        setBadge("gps", "warn", "Tidak ada data");
-        return;
-      }
-
-      const d   = json.data;
-      const lat = parseFloat(d.lat);
-      const lng = parseFloat(d.lng);
-      const ts  = new Date(d.ts || d.t);
-      const age = (Date.now() - ts.getTime()) / 1000;
-
-      document.getElementById("gps-stale").classList.toggle("show", age > 30);
-
-      document.getElementById("gps-lat").textContent   = lat.toFixed(6);
-      document.getElementById("gps-lng").textContent   = lng.toFixed(6);
-      document.getElementById("gps-acc").textContent   = d.accuracy_m ? d.accuracy_m + " m" : (d.acc ? d.acc + " m" : "—");
-      document.getElementById("gps-speed").textContent = d.speed ? (parseFloat(d.speed) * 3.6).toFixed(1) + " km/h" : "—";
-      document.getElementById("gps-ts").textContent    = ts.toLocaleString("id-ID");
-
-      const now = new Date().toLocaleTimeString("id-ID");
-      document.getElementById("gps-last-update").textContent = now;
-
-      // Update map
-      updateMap(lat, lng, historyPoints.length > 0 ? historyPoints : null);
-      setBadge("gps", age > 30 ? "warn" : "ok", age > 30 ? "Stale" : "Live");
-      lastGpsTs = ts;
-      addLog("success", `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} (${age.toFixed(0)}s lalu)`);
-    }
-
-  } catch(err) {
-    setBadge("gps", "error", "Error");
-    addLog("error", "Gagal ambil GPS: " + err.message);
-  }
-}
-
-// ═══════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════
-function setBadge(which, state, label) {
-  const el = document.getElementById(which + "-status-badge");
-  el.className = "badge " + (state === "ok" ? "badge-ok" : state === "warn" ? "badge-warn" : state === "error" ? "badge-error" : "badge-idle");
+// ── HELPERS ──
+function setBadge(state, label) {
+  const el = document.getElementById("accel-status-badge");
+  el.className  = "badge " + (state === "ok" ? "badge-ok" : state === "warn" ? "badge-warn" : state === "error" ? "badge-error" : "badge-idle");
   el.textContent = label;
 }
 
@@ -1063,8 +659,7 @@ function addLog(type, msg) {
   const list  = document.getElementById("log-list");
   const empty = document.getElementById("log-empty");
   if (empty) empty.remove();
-
-  const now  = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const now  = new Date().toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
   const item = document.createElement("div");
   item.className = "log-item " + (type === "success" ? "success" : type === "error" ? "error" : type === "warn" ? "warn" : "");
   item.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
@@ -1075,6 +670,6 @@ function addLog(type, msg) {
 function clearLog() {
   document.getElementById("log-list").innerHTML = '<div class="log-empty" id="log-empty">Belum ada aktivitas</div>';
 }
-</script> 
+</script>
 </body>
 </html>
