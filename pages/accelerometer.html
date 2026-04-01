@@ -712,23 +712,23 @@
             <p class="card-desc">Masukkan Device ID yang ingin dipantau</p>
           </div>
           <div class="card-body">
-            <!-- Input device — hilang setelah device dipilih -->
-            <div id="device-filter-form" class="device-filter">
+            <!-- Form input device (hilang setelah pilih) -->
+            <div class="device-filter" id="device-filter-form">
               <input type="text" id="admin-device-input" placeholder="Contoh: budi123"
                 onkeydown="if(event.key==='Enter') applyDeviceFilter()" />
-              <button class="btn btn-dark btn-sm" id="btn-monitor" onclick="applyDeviceFilter()">Monitor</button>
+              <button class="btn btn-dark btn-sm" onclick="applyDeviceFilter()">Monitor</button>
             </div>
 
-            <!-- Swap banner — muncul setelah device aktif -->
+            <!-- Swap banner (muncul setelah device dipilih) -->
             <div id="swap-banner" style="display:none;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#ede9fe,#f5f3ff);border:1.5px solid #c4b5fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;">
               <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:34px;height:34px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;" id="swap-avatar">?</div>
+                <div id="swap-avatar" style="width:34px;height:34px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;">?</div>
                 <div>
-                  <div style="font-size:13px;font-weight:700;" id="swap-device-label">—</div>
+                  <div id="swap-device-label" style="font-size:13px;font-weight:700;">—</div>
                   <div style="font-size:11px;color:var(--muted-fg);">Device sedang dipantau</div>
                 </div>
               </div>
-              <button class="btn btn-outline btn-sm" onclick="swapDevice()" style="gap:6px;white-space:nowrap;">
+              <button class="btn btn-outline btn-sm" onclick="swapDevice()" style="white-space:nowrap;gap:6px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
                 Swap Device
               </button>
@@ -1155,20 +1155,19 @@
     document.getElementById('admin-accel-card').style.display = 'block';
     document.getElementById('admin-log-card').style.display   = 'block';
 
-    // Tampilkan swap banner, sembunyikan form input
+    // Sembunyikan form, tampilkan swap banner
     document.getElementById('device-filter-form').style.display = 'none';
-    const banner = document.getElementById('swap-banner');
-    banner.style.display = 'flex';
-    document.getElementById('swap-device-label').textContent = adminDeviceId;
-    document.getElementById('swap-avatar').textContent = adminDeviceId.charAt(0).toUpperCase();
+    document.getElementById('swap-banner').style.display        = 'flex';
+    document.getElementById('swap-device-label').textContent    = adminDeviceId;
+    document.getElementById('swap-avatar').textContent          = adminDeviceId.charAt(0).toUpperCase();
 
     initAdminChart();
     startAdminPolling();
     addAdminLog('ok', 'Mulai memantau: ' + adminDeviceId);
   }
 
-  // Swap: kembali ke form input, reset semua, biarkan pilih device baru
   function swapDevice() {
+    // Stop polling dulu
     stopAdminPolling();
 
     // Reset chart
@@ -1178,25 +1177,24 @@
       adminChart.update('none');
     }
 
-    // Reset nilai display
+    // Reset semua nilai display
     ['a-x','a-y','a-z'].forEach(id => document.getElementById(id).textContent = '—');
-    document.getElementById('a-mag').textContent = '—';
-    document.getElementById('a-mag-fill').style.width = '0%';
+    document.getElementById('a-mag').textContent       = '—';
+    document.getElementById('a-mag-fill').style.width  = '0%';
     document.getElementById('a-last-update').textContent = '—';
-    document.getElementById('a-ts').textContent = '—';
+    document.getElementById('a-ts').textContent          = '—';
     document.getElementById('a-sample-count').textContent = '—';
     document.getElementById('admin-cur-device').textContent = '—';
     document.getElementById('admin-stale').classList.remove('show');
     document.getElementById('admin-live-ind').style.display = 'none';
+    document.getElementById('admin-accel-card').style.display = 'none';
+    document.getElementById('admin-log-card').style.display   = 'none';
     setAdminBadge('idle', 'Menunggu...');
-
-    // Reset log
     clearAdminLog();
 
-    // Sembunyikan banner, tampilkan form input lagi
-    document.getElementById('swap-banner').style.display = 'none';
-    const form = document.getElementById('device-filter-form');
-    form.style.display = 'flex';
+    // Sembunyikan banner, tampilkan form lagi
+    document.getElementById('swap-banner').style.display        = 'none';
+    document.getElementById('device-filter-form').style.display = 'flex';
     document.getElementById('admin-device-input').value = '';
     setTimeout(() => document.getElementById('admin-device-input').focus(), 100);
 
