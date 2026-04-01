@@ -1,266 +1,1248 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Accelerometer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#7c3aed" />
+  <title>AccelTrack — Sensor Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<link rel="stylesheet" href="../style.css">
+  <style>
+    :root {
+      --primary:      #7c3aed;
+      --primary-dark: #5b21b6;
+      --primary-light:rgba(124,58,237,0.1);
+      --accent:       #06b6d4;
+      --bg:           #f5f3ff;
+      --surface:      #ffffff;
+      --foreground:   #1e1b4b;
+      --muted-fg:     #6b7280;
+      --border:       #e5e7eb;
+      --success:      #16a34a;
+      --success-bg:   #dcfce7;
+      --danger:       #dc2626;
+      --danger-bg:    #fee2e2;
+      --warning:      #d97706;
+      --warning-bg:   #fef3c7;
+      --radius:       14px;
+      --radius-sm:    8px;
+      --shadow:       0 1px 3px rgba(0,0,0,0.06), 0 4px 20px rgba(124,58,237,0.08);
+      --font:         'DM Sans', sans-serif;
+      --mono:         'DM Mono', monospace;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<style>
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--foreground);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
 
-body{
-font-family: Arial;
-background:#f4f6f9;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
+    /* ── APP SHELL ── */
+    .app-container { display: flex; justify-content: center; padding: 0 0 40px; }
+    .app-wrapper   { width: 100%; max-width: 480px; }
 
-.card{
-background:white;
-padding:30px;
-border-radius:12px;
-box-shadow:0 4px 20px rgba(0,0,0,0.1);
-width:380px;
-text-align:center;
-}
+    /* ── HEADER ── */
+    .app-header {
+      text-align: center;
+      padding: 28px 24px 16px;
+    }
 
-.sensor-box{
-display:flex;
-justify-content:space-between;
-margin:20px 0;
-}
+    .logo-row {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 4px;
+    }
 
-.sensor{
-background:#f1f3f5;
-padding:15px;
-border-radius:8px;
-width:90px;
-}
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      box-shadow: 0 4px 12px rgba(124,58,237,0.35);
+    }
 
-.sensor span{
-font-size:18px;
-font-weight:bold;
-}
+    .logo-text {
+      font-size: 22px; font-weight: 800; letter-spacing: -0.03em;
+      color: var(--foreground);
+    }
+    .logo-text span { color: var(--primary); }
+    .logo-subtitle { font-size: 12px; color: var(--muted-fg); font-weight: 500; }
 
-button{
-padding:12px 20px;
-border:none;
-background:#2563eb;
-color:white;
-border-radius:8px;
-cursor:pointer;
-font-size:15px;
-margin-top:10px;
-}
+    /* ── TAB NAV ── */
+    .tab-nav {
+      display: flex;
+      background: #ede9fe;
+      border-radius: 12px;
+      padding: 4px;
+      margin: 0 16px 16px;
+      gap: 4px;
+    }
 
-canvas{
-margin-top:20px;
-}
+    .tab-btn {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 9px;
+      font-family: var(--font);
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: #7c3aed99;
+    }
 
-</style>
+    .tab-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(124,58,237,0.15);
+    }
 
+    .tab-btn-admin.active {
+      background: var(--foreground);
+      color: white;
+      box-shadow: 0 2px 8px rgba(30,27,75,0.2);
+    }
+
+    /* ── PANEL ── */
+    .panel { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .card-title-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .card-title { font-size: 15px; font-weight: 700; }
+    .card-desc  { font-size: 12px; color: var(--muted-fg); margin-top: 2px; }
+    .card-body  { padding: 16px 18px 18px; }
+
+    .icon-sensor { color: var(--primary); }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: #fafafa;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+      background: white;
+    }
+
+    .required { color: var(--danger); }
+
+    /* ── BUTTON ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(124,58,237,0.3);
+    }
+    .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 6px 16px rgba(124,58,237,0.4); }
+
+    .btn-dark {
+      background: var(--foreground);
+      color: white;
+    }
+    .btn-dark:hover { background: #312e81; }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-outline:hover { background: var(--primary-light); }
+
+    .btn-sm { padding: 8px 14px; font-size: 12px; }
+    .full-width { width: 100%; }
+
+    /* ── IDENTITY BANNER ── */
+    .identity-banner {
+      background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+      border: 1.5px solid #c4b5fd;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .identity-info { display: flex; align-items: center; gap: 10px; }
+
+    .identity-avatar {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .identity-text strong { display: block; font-size: 13px; font-weight: 700; }
+    .identity-text span   { font-size: 11px; color: var(--muted-fg); font-family: var(--mono); }
+
+    .btn-icon {
+      background: none; border: none;
+      color: var(--muted-fg); cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }
+    .btn-icon:hover { color: var(--primary); }
+
+    /* ── AXIS GRID ── */
+    .axis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .axis-card {
+      background: var(--primary-light);
+      border: 1.5px solid rgba(124,58,237,0.15);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .axis-label {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--primary); margin-bottom: 4px;
+    }
+
+    .axis-value {
+      font-family: var(--mono);
+      font-size: 20px; font-weight: 700;
+      color: var(--foreground); line-height: 1;
+    }
+
+    .axis-unit { font-size: 10px; color: var(--muted-fg); margin-top: 2px; }
+
+    /* Magnitude */
+    .mag-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .mag-label { font-size: 12px; color: var(--muted-fg); min-width: 70px; }
+    .mag-track { flex: 1; height: 6px; background: #e8e8ed; border-radius: 100px; overflow: hidden; }
+    .mag-fill  { height: 100%; background: var(--primary); border-radius: 100px; transition: width 0.3s; width: 0%; }
+    .mag-val   { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--primary); min-width: 42px; text-align: right; }
+
+    /* ── STATUS INDICATORS ── */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .pill-ok      { background: var(--success-bg); color: #15803d; }
+    .pill-warn    { background: var(--warning-bg); color: #92400e; }
+    .pill-error   { background: var(--danger-bg);  color: #991b1b; }
+    .pill-idle    { background: #e8e8ed; color: var(--muted-fg); }
+    .pill-live    { background: #ede9fe; color: var(--primary); }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* ── CHART ── */
+    .chart-wrap { position: relative; width: 100%; height: 160px; }
+
+    /* ── INFO ROW ── */
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 10px;
+      background: #f9fafb;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .info-label { color: var(--muted-fg); }
+    .info-value { font-weight: 600; font-family: var(--mono); font-size: 11px; }
+
+    /* ── SEND STATUS ── */
+    .send-status {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted-fg);
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      background: #f9fafb;
+      border: 1px solid var(--border);
+    }
+    .send-status.ok    { color: var(--success); background: var(--success-bg); border-color: #bbf7d0; }
+    .send-status.error { color: var(--danger);  background: var(--danger-bg);  border-color: #fecaca; }
+
+    /* ── ADMIN MONITOR ── */
+    .admin-hero {
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      display: flex; align-items: center; gap: 14px;
+      color: white;
+    }
+
+    .admin-hero-icon {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .admin-hero-title { font-size: 17px; font-weight: 800; }
+    .admin-hero-sub   { font-size: 12px; opacity: 0.65; margin-top: 2px; }
+
+    /* ── ADMIN FORM HEADER ── */
+    .card-header-admin {
+      background: linear-gradient(135deg, #1e1b4b, #4c1d95);
+      padding: 16px 18px 14px;
+    }
+    .card-header-admin .card-title { color: white; }
+    .card-header-admin .card-desc  { color: rgba(255,255,255,0.65); }
+
+    /* ── DEVICE FILTER ── */
+    .device-filter {
+      display: flex; gap: 8px; margin-bottom: 14px; align-items: center;
+    }
+    .device-filter input {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 13px; outline: none;
+    }
+    .device-filter input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* ── LOG ── */
+    .log-list {
+      max-height: 140px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .log-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 5px 8px;
+      background: #f9fafb;
+      border-radius: 6px; font-size: 11px;
+    }
+    .log-time { color: var(--muted-fg); font-family: var(--mono); flex-shrink: 0; }
+    .log-msg  { color: var(--foreground); }
+    .log-item.ok   .log-msg { color: var(--success); }
+    .log-item.err  .log-msg { color: var(--danger); }
+    .log-empty { font-size: 12px; color: var(--muted-fg); text-align: center; padding: 16px; }
+
+    /* ── PIN MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 300; padding: 20px;
+    }
+    .modal-card {
+      background: white;
+      border-radius: 18px;
+      padding: 32px 28px;
+      width: 100%; max-width: 340px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #1e1b4b, #4c1d95);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; margin: 0 auto 16px;
+    }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .modal-sub   { font-size: 13px; color: var(--muted-fg); margin-bottom: 20px; }
+    .modal-input {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--mono); font-size: 18px;
+      text-align: center; letter-spacing: 0.15em;
+      outline: none; margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .modal-error { font-size: 12px; color: var(--danger); margin-bottom: 10px; display: none; }
+
+    /* ── INTERVAL SELECT ── */
+    .interval-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    }
+    .interval-row label { font-size: 12px; color: var(--muted-fg); flex-shrink: 0; }
+    .interval-select {
+      padding: 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font); font-size: 12px;
+      outline: none; cursor: pointer;
+    }
+    .interval-select:focus { border-color: var(--primary); }
+
+    /* ── STALE BANNER ── */
+    .stale-banner {
+      display: none;
+      padding: 8px 12px;
+      background: var(--warning-bg);
+      border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 600;
+      color: #92400e; margin-bottom: 10px;
+    }
+    .stale-banner.show { display: block; }
+
+    /* ── FOOTER ── */
+    .app-footer {
+      text-align: center;
+      font-size: 11px; color: var(--muted-fg);
+      padding: 20px 0 8px;
+    }
+
+    /* ── PULSE ── */
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+      50%       { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-ring 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .live-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--success); font-weight: 600;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { animation: spin 1s linear infinite; }
+  </style>
 </head>
 
 <body>
+  <!-- ══ PIN MODAL ══ -->
+  <div class="modal-overlay" id="pin-modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div class="modal-title">Akses Admin</div>
+      <div class="modal-sub">Masukkan PIN untuk membuka panel monitor</div>
+      <input type="password" class="modal-input" id="pin-input" maxlength="6" placeholder="••••••"
+        onkeydown="if(event.key==='Enter') verifyPin()" />
+      <div class="modal-error" id="pin-error">PIN salah. Coba lagi.</div>
+      <button class="btn btn-dark full-width" onclick="verifyPin()">Masuk</button>
+      <br/><br/>
+      <button class="btn btn-outline full-width btn-sm" onclick="cancelPinModal()">Batal</button>
+    </div>
+  </div>
 
-<div class="card">
+  <main class="app-container">
+    <div class="app-wrapper">
 
-<h2>Accelerometer</h2>
-<p>Gerakkan smartphone untuk melihat sensor</p>
+      <!-- Header -->
+      <header class="app-header">
+        <div class="logo-row">
+          <div class="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </div>
+          <h1 class="logo-text">Accel<span>Track</span></h1>
+        </div>
+        <p class="logo-subtitle">Monitor Accelerometer Real-Time</p>
+      </header>
 
-<div class="sensor-box">
+      <!-- Tab Nav -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" id="tab-client" onclick="switchTab('client')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          Client
+        </button>
+        <button class="tab-btn tab-btn-admin" id="tab-admin" onclick="switchTab('admin')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+          </svg>
+          Admin Monitor
+        </button>
+      </nav>
 
-<div class="sensor">
-X<br>
-<span id="x">0</span>
-</div>
+      <!-- ══════════════ CLIENT PANEL ══════════════ -->
+      <section id="panel-client" class="panel">
 
-<div class="sensor">
-Y<br>
-<span id="y">0</span>
-</div>
+        <!-- Form Identitas -->
+        <div class="card" id="client-profile-form">
+          <div class="card-header">
+            <div class="card-title-row">
+              <svg class="icon-sensor" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <h2 class="card-title">Identitas Pengguna</h2>
+            </div>
+            <p class="card-desc">Device ID digunakan untuk mengirim data sensor</p>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Device ID <span class="required">*</span></label>
+              <input type="text" class="form-input" id="input-device-id" placeholder="Contoh: budi123" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nama Lengkap</label>
+              <input type="text" class="form-input" id="input-nama" placeholder="Contoh: Budi Santoso" />
+            </div>
+            <button class="btn btn-primary full-width" onclick="saveClientProfile()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+              Lanjut ke Sensor
+            </button>
+          </div>
+        </div>
 
-<div class="sensor">
-Z<br>
-<span id="z">0</span>
-</div>
+        <!-- Identity Banner -->
+        <div class="identity-banner" id="client-identity" style="display:none;">
+          <div class="identity-info">
+            <div class="identity-avatar" id="client-avatar">B</div>
+            <div class="identity-text">
+              <strong id="client-nama-disp">—</strong>
+              <span id="client-id-disp">—</span>
+            </div>
+          </div>
+          <button class="btn-icon" onclick="resetClientProfile()" title="Ganti identitas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+            </svg>
+          </button>
+        </div>
 
-</div>
+        <!-- Sensor Card -->
+        <div class="card" id="sensor-section" style="display:none;">
+          <div class="card-header">
+            <div class="card-title-row" style="justify-content:space-between;">
+              <div class="card-title-row">
+                <svg class="icon-sensor" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+                <h2 class="card-title">Live Sensor</h2>
+              </div>
+              <span class="status-pill pill-idle" id="sensor-status-badge">Idle</span>
+            </div>
+            <p class="card-desc">Data accelerometer dari perangkat Anda</p>
+          </div>
+          <div class="card-body">
+            <!-- Axes -->
+            <div class="axis-grid">
+              <div class="axis-card">
+                <div class="axis-label">X</div>
+                <div class="axis-value" id="c-x">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+              <div class="axis-card">
+                <div class="axis-label">Y</div>
+                <div class="axis-value" id="c-y">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+              <div class="axis-card">
+                <div class="axis-label">Z</div>
+                <div class="axis-value" id="c-z">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+            </div>
 
-<button onclick="startSensor()">Start Sensor</button>
-<button onclick="stopSensor()">Stop Sensor</button>
+            <!-- Magnitude -->
+            <div class="mag-row">
+              <span class="mag-label">Magnitude</span>
+              <div class="mag-track"><div class="mag-fill" id="c-mag-fill"></div></div>
+              <span class="mag-val" id="c-mag">—</span>
+            </div>
 
-<canvas id="chart"></canvas>
+            <!-- Chart -->
+            <div class="chart-wrap">
+              <canvas id="client-chart"></canvas>
+            </div>
 
-</div>
+            <!-- Buttons -->
+            <div style="display:flex;gap:8px;margin-top:14px;">
+              <button class="btn btn-primary" style="flex:1;" id="btn-start" onclick="startSensor()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+                Start
+              </button>
+              <button class="btn btn-danger" style="flex:1;" id="btn-stop" onclick="stopSensor()" disabled>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/>
+                </svg>
+                Stop
+              </button>
+            </div>
+          </div>
+        </div>
 
-<script>
+        <!-- Send Status Card -->
+        <div class="card" id="send-card" style="display:none;">
+          <div class="card-header">
+            <div class="card-title-row" style="justify-content:space-between;">
+              <div class="card-title-row">
+                <svg class="icon-sensor" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+                </svg>
+                <h2 class="card-title">Status Pengiriman</h2>
+              </div>
+              <div class="live-indicator" id="send-live-ind" style="display:none;">
+                <div class="live-dot"></div> Mengirim
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="info-row">
+              <span class="info-label">Device ID</span>
+              <span class="info-value" id="s-device-id">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Batch dikirim</span>
+              <span class="info-value" id="s-batch-count">0</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Sampel terakhir</span>
+              <span class="info-value" id="s-sample-count">0</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Kirim terakhir</span>
+              <span class="info-value" id="s-last-send">—</span>
+            </div>
+            <div class="send-status" id="s-status-msg" style="margin-top:10px;">Belum ada pengiriman</div>
+          </div>
+        </div>
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
+      </section>
 
-let samples = [];
-let motionHandler = null;
+      <!-- ══════════════ ADMIN PANEL ══════════════ -->
+      <section id="panel-admin" class="panel" style="display:none;">
 
-/* CHART SETUP */
+        <div class="admin-hero">
+          <div class="admin-hero-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="admin-hero-title">Admin Monitor</div>
+            <div class="admin-hero-sub">Pantau data accelerometer semua device</div>
+          </div>
+        </div>
 
-const ctx = document.getElementById("chart");
+        <!-- Device Filter -->
+        <div class="card">
+          <div class="card-header card-header-admin">
+            <div class="card-title-row">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+              <h2 class="card-title">Filter Device</h2>
+            </div>
+            <p class="card-desc">Masukkan Device ID yang ingin dipantau</p>
+          </div>
+          <div class="card-body">
+            <div class="device-filter">
+              <input type="text" id="admin-device-input" placeholder="Contoh: budi123"
+                onkeydown="if(event.key==='Enter') applyDeviceFilter()" />
+              <button class="btn btn-dark btn-sm" onclick="applyDeviceFilter()">Monitor</button>
+            </div>
 
-const chart = new Chart(ctx,{
-type:"line",
-data:{
-labels:[],
-datasets:[
-{
-label:"X",
-data:[],
-borderColor:"red",
-fill:false
-},
-{
-label:"Y",
-data:[],
-borderColor:"green",
-fill:false
-},
-{
-label:"Z",
-data:[],
-borderColor:"blue",
-fill:false
-}
-]
-},
-options:{
-animation:false,
-responsive:true,
-scales:{
-y:{
-min:-20,
-max:20
-}
-}
-}
-});
+            <div class="interval-row">
+              <label>Interval:</label>
+              <select class="interval-select" id="admin-interval" onchange="changeAdminInterval(this.value)">
+                <option value="3000">3 detik</option>
+                <option value="5000" selected>5 detik</option>
+                <option value="10000">10 detik</option>
+                <option value="30000">30 detik</option>
+              </select>
+              <div class="live-indicator" id="admin-live-ind" style="display:none; margin-left:auto;">
+                <div class="live-dot"></div>
+                <span id="admin-live-text">Live</span>
+              </div>
+            </div>
 
+            <div class="info-row">
+              <span class="info-label">Device aktif</span>
+              <span class="info-value" id="admin-cur-device">—</span>
+            </div>
+          </div>
+        </div>
 
-function updateChart(x,y,z){
+        <!-- Accel Monitor Card -->
+        <div class="card" id="admin-accel-card" style="display:none;">
+          <div class="card-header">
+            <div class="card-title-row" style="justify-content:space-between;">
+              <div class="card-title-row">
+                <svg class="icon-sensor" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+                <h2 class="card-title">Data Accelerometer</h2>
+              </div>
+              <span class="status-pill pill-idle" id="admin-accel-badge">Menunggu...</span>
+            </div>
+          </div>
+          <div class="card-body">
 
-let time = new Date().toLocaleTimeString();
+            <div class="stale-banner" id="admin-stale">⚠️ Data mungkin sudah tidak aktif (>30 detik)</div>
 
-chart.data.labels.push(time);
-chart.data.datasets[0].data.push(x);
-chart.data.datasets[1].data.push(y);
-chart.data.datasets[2].data.push(z);
+            <div class="axis-grid">
+              <div class="axis-card">
+                <div class="axis-label">X</div>
+                <div class="axis-value" id="a-x">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+              <div class="axis-card">
+                <div class="axis-label">Y</div>
+                <div class="axis-value" id="a-y">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+              <div class="axis-card">
+                <div class="axis-label">Z</div>
+                <div class="axis-value" id="a-z">—</div>
+                <div class="axis-unit">m/s²</div>
+              </div>
+            </div>
 
-if(chart.data.labels.length > 20){
-chart.data.labels.shift();
-chart.data.datasets.forEach(d => d.data.shift());
-}
+            <div class="mag-row">
+              <span class="mag-label">Magnitude</span>
+              <div class="mag-track"><div class="mag-fill" id="a-mag-fill"></div></div>
+              <span class="mag-val" id="a-mag">—</span>
+            </div>
 
-chart.update();
+            <div class="chart-wrap">
+              <canvas id="admin-chart"></canvas>
+            </div>
 
-}
+            <div style="margin-top:14px;">
+              <div class="info-row">
+                <span class="info-label">Update terakhir</span>
+                <span class="info-value" id="a-last-update">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Timestamp data</span>
+                <span class="info-value" id="a-ts">—</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Jumlah sampel</span>
+                <span class="info-value" id="a-sample-count">—</span>
+              </div>
+            </div>
 
+            <button class="btn btn-outline full-width btn-sm" style="margin-top:8px;" onclick="fetchAdminData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="a-refresh-icon">
+                <path d="M21 12a9 9 0 1 1-2.637-6.364"/><path d="M21 4v4h-4"/>
+              </svg>
+              Refresh Manual
+            </button>
+          </div>
+        </div>
 
-/* SENSOR */
+        <!-- Activity Log -->
+        <div class="card" id="admin-log-card" style="display:none;">
+          <div class="card-header">
+            <div class="card-title-row" style="justify-content:space-between;">
+              <div class="card-title-row">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <h2 class="card-title" style="font-size:14px;">Activity Log</h2>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="clearAdminLog()">Hapus</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-top:10px;">
+            <div class="log-list" id="admin-log-list">
+              <div class="log-empty">Belum ada aktivitas</div>
+            </div>
+          </div>
+        </div>
 
-function startSensor(){
+      </section>
 
-if (typeof DeviceMotionEvent.requestPermission === "function") {
+      <footer class="app-footer">AccelTrack v1.0 — Berbasis CloudPresence</footer>
+    </div>
+  </main>
 
-DeviceMotionEvent.requestPermission()
-.then(permissionState => {
+  <script>
+  // ════════════════════════════════════════════════
+  // CONFIG
+  // ════════════════════════════════════════════════
+  const BASE_URL = "https://script.google.com/macros/s/AKfycbwpEqKnQouDhcYQsQfJFVFjw486G3Ilxzi12cGpaKxsGmgR-_4iABEB6Y3AdiB2kZI2dg/exec";
 
-if (permissionState === "granted") {
-listenSensor();
-}
+  // PIN admin — ganti sesuai kebutuhan
+  const ADMIN_PIN = "1234";
 
-});
+  // ════════════════════════════════════════════════
+  // TAB SWITCH
+  // ════════════════════════════════════════════════
+  let adminUnlocked = false;
 
-} else {
+  function switchTab(tab) {
+    if (tab === 'admin' && !adminUnlocked) {
+      showPinModal();
+      return;
+    }
+    document.getElementById('panel-client').style.display = tab === 'client' ? 'flex' : 'none';
+    document.getElementById('panel-admin').style.display  = tab === 'admin'  ? 'flex' : 'none';
+    document.getElementById('tab-client').classList.toggle('active', tab === 'client');
+    document.getElementById('tab-admin').classList.toggle('active', tab === 'admin');
+  }
 
-listenSensor();
+  // ════════════════════════════════════════════════
+  // PIN MODAL
+  // ════════════════════════════════════════════════
+  function showPinModal() {
+    document.getElementById('pin-modal').style.display = 'flex';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    setTimeout(() => document.getElementById('pin-input').focus(), 100);
+  }
 
-}
+  function cancelPinModal() {
+    document.getElementById('pin-modal').style.display = 'none';
+  }
 
-}
+  function verifyPin() {
+    const entered = document.getElementById('pin-input').value.trim();
+    if (entered === ADMIN_PIN) {
+      adminUnlocked = true;
+      document.getElementById('pin-modal').style.display = 'none';
+      // Proceed to admin tab
+      document.getElementById('panel-client').style.display = 'none';
+      document.getElementById('panel-admin').style.display  = 'flex';
+      document.getElementById('tab-client').classList.remove('active');
+      document.getElementById('tab-admin').classList.add('active');
+    } else {
+      const errEl = document.getElementById('pin-error');
+      errEl.style.display = 'block';
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').style.borderColor = '#dc2626';
+      setTimeout(() => {
+        document.getElementById('pin-input').style.borderColor = '';
+      }, 1200);
+    }
+  }
 
-function listenSensor(){
+  // ════════════════════════════════════════════════
+  // CLIENT — Profile
+  // ════════════════════════════════════════════════
+  let clientDeviceId = '';
+  let clientNama     = '';
 
-motionHandler = function(event){
+  function saveClientProfile() {
+    const id   = document.getElementById('input-device-id').value.trim();
+    const nama = document.getElementById('input-nama').value.trim();
+    if (!id) {
+      document.getElementById('input-device-id').style.borderColor = '#dc2626';
+      setTimeout(() => document.getElementById('input-device-id').style.borderColor = '', 1200);
+      return;
+    }
+    clientDeviceId = id;
+    clientNama     = nama || id;
 
-let acc = event.accelerationIncludingGravity || event.acceleration;
+    document.getElementById('client-profile-form').style.display = 'none';
+    document.getElementById('client-identity').style.display     = 'flex';
+    document.getElementById('sensor-section').style.display      = 'block';
+    document.getElementById('send-card').style.display           = 'block';
 
-if(!acc) return;
+    document.getElementById('client-avatar').textContent  = clientNama.charAt(0).toUpperCase();
+    document.getElementById('client-nama-disp').textContent = clientNama;
+    document.getElementById('client-id-disp').textContent   = clientDeviceId;
+    document.getElementById('s-device-id').textContent      = clientDeviceId;
 
-let x = acc.x || 0;
-let y = acc.y || 0;
-let z = acc.z || 0;
+    initClientChart();
+  }
 
-document.getElementById("x").innerText = x.toFixed(2);
-document.getElementById("y").innerText = y.toFixed(2);
-document.getElementById("z").innerText = z.toFixed(2);
+  function resetClientProfile() {
+    stopSensor();
+    clientDeviceId = ''; clientNama = '';
+    document.getElementById('client-profile-form').style.display = 'block';
+    document.getElementById('client-identity').style.display     = 'none';
+    document.getElementById('sensor-section').style.display      = 'none';
+    document.getElementById('send-card').style.display           = 'none';
+  }
 
-updateChart(x,y,z);
+  // ════════════════════════════════════════════════
+  // CLIENT — Chart
+  // ════════════════════════════════════════════════
+  let clientChart = null;
 
-samples.push({
-t:new Date().toISOString(),
-x:x,
-y:y,
-z:z
-});
+  function initClientChart() {
+    if (clientChart) { clientChart.destroy(); clientChart = null; }
+    const ctx = document.getElementById('client-chart').getContext('2d');
+    clientChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'X', data: [], borderColor: '#7c3aed', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false },
+          { label: 'Y', data: [], borderColor: '#06b6d4', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false },
+          { label: 'Z', data: [], borderColor: '#16a34a', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false }
+        ]
+      },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { family: "'DM Sans', sans-serif", size: 11 }, boxWidth: 10, padding: 8 } } },
+        scales: {
+          x: { display: false },
+          y: { min: -25, max: 25, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, maxTicksLimit: 5 } }
+        }
+      }
+    });
+  }
 
-};
+  function pushClientChart(x, y, z) {
+    if (!clientChart) return;
+    const label = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    clientChart.data.labels.push(label);
+    clientChart.data.datasets[0].data.push(x);
+    clientChart.data.datasets[1].data.push(y);
+    clientChart.data.datasets[2].data.push(z);
+    if (clientChart.data.labels.length > 30) {
+      clientChart.data.labels.shift();
+      clientChart.data.datasets.forEach(d => d.data.shift());
+    }
+    clientChart.update('none');
+  }
 
-window.addEventListener("devicemotion", motionHandler);
+  // ════════════════════════════════════════════════
+  // CLIENT — Sensor
+  // ════════════════════════════════════════════════
+  let motionHandler  = null;
+  let clientSamples  = [];
+  let batchCount     = 0;
+  let sampleTotal    = 0;
+  let sendTimer      = null;
 
-}
+  function startSensor() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission()
+        .then(state => { if (state === 'granted') listenSensor(); })
+        .catch(() => alert('Izin sensor ditolak'));
+    } else {
+      listenSensor();
+    }
+  }
 
+  function listenSensor() {
+    motionHandler = function(event) {
+      const acc = event.accelerationIncludingGravity || event.acceleration;
+      if (!acc) return;
+      const x = parseFloat((acc.x || 0).toFixed(3));
+      const y = parseFloat((acc.y || 0).toFixed(3));
+      const z = parseFloat((acc.z || 0).toFixed(3));
 
-function stopSensor(){
+      document.getElementById('c-x').textContent = x.toFixed(2);
+      document.getElementById('c-y').textContent = y.toFixed(2);
+      document.getElementById('c-z').textContent = z.toFixed(2);
 
-if(motionHandler){
-window.removeEventListener("devicemotion", motionHandler);
-motionHandler = null;
-}
+      const mag = Math.sqrt(x*x + y*y + z*z);
+      document.getElementById('c-mag').textContent = mag.toFixed(2);
+      document.getElementById('c-mag-fill').style.width = Math.min((mag/30)*100, 100) + '%';
 
-}
+      pushClientChart(x, y, z);
 
+      clientSamples.push({ t: new Date().toISOString(), x, y, z });
+      sampleTotal++;
+    };
+    window.addEventListener('devicemotion', motionHandler);
 
-/* SEND DATA */
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('btn-stop').disabled  = false;
+    document.getElementById('sensor-status-badge').className = 'status-pill pill-live';
+    document.getElementById('sensor-status-badge').textContent = '● Live';
+    document.getElementById('send-live-ind').style.display = 'flex';
 
-setInterval(sendBatch,3000);
+    // Send batch every 3 seconds
+    sendTimer = setInterval(sendBatch, 3000);
+  }
 
-function sendBatch(){
+  function stopSensor() {
+    if (motionHandler) {
+      window.removeEventListener('devicemotion', motionHandler);
+      motionHandler = null;
+    }
+    if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
 
-if(samples.length === 0) return;
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-stop').disabled  = true;
+    document.getElementById('sensor-status-badge').className = 'status-pill pill-idle';
+    document.getElementById('sensor-status-badge').textContent = 'Idle';
+    document.getElementById('send-live-ind').style.display = 'none';
+  }
 
-let payload = {
-device_id:"dev-001",
-ts:new Date().toISOString(),
-samples:samples
-};
+  async function sendBatch() {
+    if (clientSamples.length === 0) return;
+    const payload = {
+      device_id: clientDeviceId,
+      ts: new Date().toISOString(),
+      samples: [...clientSamples]
+    };
+    clientSamples = [];
 
-fetch(BASE_URL+"?path=telemetry/accel",{
-method:"POST",
-mode:"no-cors",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(payload)
-})
+    try {
+      await fetch(BASE_URL + "?path=telemetry/accel", {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      batchCount++;
+      const now = new Date().toLocaleTimeString('id-ID');
+      document.getElementById('s-batch-count').textContent  = batchCount;
+      document.getElementById('s-sample-count').textContent = sampleTotal;
+      document.getElementById('s-last-send').textContent    = now;
+      const sEl = document.getElementById('s-status-msg');
+      sEl.className = 'send-status ok';
+      sEl.textContent = '✓ Batch #' + batchCount + ' berhasil dikirim — ' + now;
+    } catch(e) {
+      const sEl = document.getElementById('s-status-msg');
+      sEl.className = 'send-status error';
+      sEl.textContent = '✗ Gagal kirim: ' + e.message;
+    }
+  }
 
-samples=[];
+  // ════════════════════════════════════════════════
+  // ADMIN — Chart
+  // ════════════════════════════════════════════════
+  let adminChart = null;
 
-}
+  function initAdminChart() {
+    if (adminChart) { adminChart.destroy(); adminChart = null; }
+    const ctx = document.getElementById('admin-chart').getContext('2d');
+    adminChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'X', data: [], borderColor: '#7c3aed', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false },
+          { label: 'Y', data: [], borderColor: '#06b6d4', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false },
+          { label: 'Z', data: [], borderColor: '#16a34a', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false }
+        ]
+      },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { family: "'DM Sans', sans-serif", size: 11 }, boxWidth: 10, padding: 8 } } },
+        scales: {
+          x: { display: false },
+          y: { min: -25, max: 25, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, maxTicksLimit: 5 } }
+        }
+      }
+    });
+  }
 
-</script>
+  function pushAdminChart(samples) {
+    if (!adminChart || !samples || samples.length === 0) return;
+    const s = samples[samples.length - 1];
+    const label = new Date(s.t).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    adminChart.data.labels.push(label);
+    adminChart.data.datasets[0].data.push(parseFloat(s.x));
+    adminChart.data.datasets[1].data.push(parseFloat(s.y));
+    adminChart.data.datasets[2].data.push(parseFloat(s.z));
+    if (adminChart.data.labels.length > 40) {
+      adminChart.data.labels.shift();
+      adminChart.data.datasets.forEach(d => d.data.shift());
+    }
+    adminChart.update('none');
+  }
 
+  // ════════════════════════════════════════════════
+  // ADMIN — Polling
+  // ════════════════════════════════════════════════
+  let adminDeviceId  = '';
+  let adminPollTimer = null;
+  let adminInterval  = 5000;
+
+  function applyDeviceFilter() {
+    const val = document.getElementById('admin-device-input').value.trim();
+    if (!val) {
+      document.getElementById('admin-device-input').style.borderColor = '#dc2626';
+      setTimeout(() => document.getElementById('admin-device-input').style.borderColor = '', 1200);
+      return;
+    }
+
+    adminDeviceId = val;
+    document.getElementById('admin-cur-device').textContent = adminDeviceId;
+    document.getElementById('admin-accel-card').style.display = 'block';
+    document.getElementById('admin-log-card').style.display   = 'block';
+
+    initAdminChart();
+    startAdminPolling();
+    addAdminLog('ok', 'Mulai memantau: ' + adminDeviceId);
+  }
+
+  function startAdminPolling() {
+    stopAdminPolling();
+    fetchAdminData();
+    adminPollTimer = setInterval(fetchAdminData, adminInterval);
+    document.getElementById('admin-live-ind').style.display = 'flex';
+    document.getElementById('admin-live-text').textContent  = 'Live • ' + (adminInterval/1000) + 'dtk';
+  }
+
+  function stopAdminPolling() {
+    if (adminPollTimer) { clearInterval(adminPollTimer); adminPollTimer = null; }
+  }
+
+  function changeAdminInterval(val) {
+    adminInterval = parseInt(val);
+    if (adminDeviceId) startAdminPolling();
+  }
+
+  async function fetchAdminData() {
+    if (!adminDeviceId) return;
+
+    const icon = document.getElementById('a-refresh-icon');
+    icon.classList.add('spinning');
+
+    try {
+      const url = `${BASE_URL}?path=telemetry/accel/latest&device_id=${encodeURIComponent(adminDeviceId)}`;
+      const res  = await fetch(url);
+      const json = await res.json();
+
+      if (!json.ok) {
+        setAdminBadge('warn', 'Tidak ada data');
+        addAdminLog('', 'Accel: ' + (json.message || 'Tidak ada data'));
+        return;
+      }
+
+      const d  = json.data;
+      const ts = new Date(d.ts || d.t);
+      const age = (Date.now() - ts.getTime()) / 1000;
+
+      document.getElementById('admin-stale').classList.toggle('show', age > 30);
+
+      let x = parseFloat(d.x) || 0;
+      let y = parseFloat(d.y) || 0;
+      let z = parseFloat(d.z) || 0;
+
+      if (d.samples && d.samples.length > 0) {
+        const latest = d.samples[d.samples.length - 1];
+        x = parseFloat(latest.x) || 0;
+        y = parseFloat(latest.y) || 0;
+        z = parseFloat(latest.z) || 0;
+        pushAdminChart(d.samples);
+        document.getElementById('a-sample-count').textContent = d.sample_count || d.samples.length;
+      } else {
+        pushAdminChart([{ t: d.ts || d.t, x, y, z }]);
+        document.getElementById('a-sample-count').textContent = d.sample_count || '—';
+      }
+
+      const mag = Math.sqrt(x*x + y*y + z*z);
+      document.getElementById('a-x').textContent = x.toFixed(2);
+      document.getElementById('a-y').textContent = y.toFixed(2);
+      document.getElementById('a-z').textContent = z.toFixed(2);
+      document.getElementById('a-mag').textContent = mag.toFixed(2);
+      document.getElementById('a-mag-fill').style.width = Math.min((mag/30)*100, 100) + '%';
+
+      const now = new Date().toLocaleTimeString('id-ID');
+      document.getElementById('a-last-update').textContent = now;
+      document.getElementById('a-ts').textContent = ts.toLocaleString('id-ID');
+
+      setAdminBadge(age > 30 ? 'warn' : 'ok', age > 30 ? 'Stale' : 'Live');
+      addAdminLog('ok', `Accel: X=${x.toFixed(2)} Y=${y.toFixed(2)} Z=${z.toFixed(2)} | ${age.toFixed(0)}s lalu`);
+
+    } catch(err) {
+      setAdminBadge('error', 'Error');
+      addAdminLog('err', 'Gagal fetch: ' + err.message);
+    } finally {
+      icon.classList.remove('spinning');
+    }
+  }
+
+  function setAdminBadge(state, label) {
+    const el = document.getElementById('admin-accel-badge');
+    el.className = 'status-pill ' + (state === 'ok' ? 'pill-ok' : state === 'warn' ? 'pill-warn' : state === 'error' ? 'pill-error' : 'pill-idle');
+    el.textContent = label;
+  }
+
+  function addAdminLog(type, msg) {
+    const list = document.getElementById('admin-log-list');
+    const empty = list.querySelector('.log-empty');
+    if (empty) empty.remove();
+    const now  = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const item = document.createElement('div');
+    item.className = 'log-item ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+    item.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
+    list.insertBefore(item, list.firstChild);
+    while (list.children.length > 40) list.removeChild(list.lastChild);
+  }
+
+  function clearAdminLog() {
+    document.getElementById('admin-log-list').innerHTML = '<div class="log-empty">Belum ada aktivitas</div>';
+  }
+  </script>
 </body>
 </html>
