@@ -153,8 +153,8 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 3px 10px;
+      gap: 6px;
+      padding: 4px 10px;
       border-radius: 100px;
       font-size: 11px;
       font-weight: 700;
@@ -170,11 +170,14 @@
       border-radius: 50%;
       background: #9ca3af;
       display: inline-block;
-      margin-right: 2px;
+      flex-shrink: 0;
     }
     .status-dot.active {
       background: var(--success);
       animation: pulse 1.5s ease-in-out infinite;
+    }
+    .status-dot.sending {
+      background: var(--gps);
     }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.3); }
@@ -252,6 +255,12 @@
       text-align: center; font-size: 11px;
       color: var(--muted-fg); margin-top: 20px; padding: 8px 0;
     }
+
+    /* Error state for input */
+    .input-error {
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.12) !important;
+    }
   </style>
 </head>
 <body>
@@ -296,13 +305,17 @@
               <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--foreground);margin-bottom:6px;">
                 Nama <span style="color:var(--danger)">*</span>
               </label>
-              <input type="text" id="input-gps-nama" placeholder="Masukkan nama kamu"
+              <input
+                type="text"
+                id="input-gps-nama"
+                placeholder="Masukkan nama kamu"
                 style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--surface);outline:none;transition:border-color 0.15s;"
                 onfocus="this.style.borderColor='var(--gps)';this.style.boxShadow='0 0 0 3px rgba(8,145,178,0.12)'"
                 onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
-                onkeydown="if(event.key==='Enter') saveIdentity()" />
+                onkeydown="if(event.key==='Enter') saveIdentity()"
+              />
             </div>
-            <button class="btn btn-gps" onclick="saveIdentity()" style="padding:10px 16px;flex-shrink:0;">
+            <button class="btn btn-gps" onclick="saveIdentity()" style="padding:10px 16px;flex-shrink:0;height:42px;">
               Simpan
             </button>
           </div>
@@ -310,11 +323,14 @@
         </div>
       </div>
 
-      <!-- Identity Banner -->
+      <!-- Identity Banner (shown after identity saved) -->
       <div id="identity-banner" style="display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gps-light);border:1.5px solid rgba(8,145,178,0.2);border-radius:var(--radius);margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:36px;height:36px;background:var(--gps);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
           </div>
           <div>
             <div style="font-size:14px;font-weight:700;color:var(--foreground);" id="banner-nama"></div>
@@ -323,11 +339,14 @@
         </div>
         <button onclick="resetIdentity()" title="Ganti nama"
           style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1.5px solid var(--border);border-radius:6px;background:white;color:var(--muted-fg);cursor:pointer;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+          </svg>
         </button>
       </div>
 
-      <!-- ===== STEP 2: GPS SECTION (hidden until identity set) ===== -->
+      <!-- ===== STEP 2: GPS SECTION ===== -->
       <div id="gps-main" style="display:none;">
 
         <!-- Hero -->
@@ -355,8 +374,10 @@
                 </svg>
                 <h2 class="card-title">Posisi Saat Ini</h2>
               </div>
+              <!-- Badge: elemen dot dan teks dipisah supaya tidak hilang saat update -->
               <span class="badge badge-idle" id="gps-badge">
-                <span class="status-dot" id="gps-dot"></span>Idle
+                <span class="status-dot" id="gps-dot"></span>
+                <span id="gps-badge-text">Idle</span>
               </span>
             </div>
             <p class="card-desc">Koordinat GPS perangkat kamu</p>
@@ -451,54 +472,92 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
-    const SEND_INTERVAL_MS = 5000;
-
-    let DEVICE_ID    = "";
-    let gpsActive    = false;
-    let gpsWatchId   = null;
-    let gpsSendTimer = null;
-    let gpsSamples   = [];
+    const TELEMETRY_URL  = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
+    let DEVICE_ID     = "";
+    let gpsActive     = false;
+    let gpsWatchId    = null;
     let gpsPointCount = 0;
 
-    // Leaflet map
-    let leafletMap   = null;
-    let gpsMarker    = null;
-    let gpsCircle    = null;
-    let gpsPolyline  = null;
-    let trackPoints  = [];
+    // Leaflet
+    let leafletMap  = null;
+    let gpsMarker   = null;
+    let gpsCircle   = null;
+    let gpsPolyline = null;
+    let trackPoints = [];
 
-    // ── IDENTITY ──
+    // ─────────────────────────────────────────────
+    // IDENTITY
+    // ─────────────────────────────────────────────
     function saveIdentity() {
-      const nama = document.getElementById("input-gps-nama").value.trim();
+      const input = document.getElementById("input-gps-nama");
+      const nama  = input.value.trim();
+
       if (!nama) {
         const err = document.getElementById("identity-error");
         err.innerText = "Nama wajib diisi!";
         err.style.display = "block";
-        setTimeout(() => { err.style.display = "none"; }, 2500);
+        input.style.borderColor = "var(--danger)";
+        input.style.boxShadow   = "0 0 0 3px rgba(220,38,38,0.12)";
+        setTimeout(() => {
+          err.style.display     = "none";
+          input.style.borderColor = "var(--border)";
+          input.style.boxShadow   = "none";
+        }, 2500);
         return;
       }
+
+      // FIX: pastikan DEVICE_ID benar-benar di-set sebelum lanjut
       DEVICE_ID = nama;
+
       document.getElementById("identity-card").style.display   = "none";
       document.getElementById("identity-banner").style.display = "flex";
       document.getElementById("banner-nama").innerText          = nama;
       document.getElementById("gps-main").style.display        = "block";
 
-      // Init map after element is visible
-      setTimeout(initMap, 100);
+      // Init map setelah elemen visible
+      setTimeout(initMap, 150);
       addLog("success", "Identitas disimpan: " + nama);
     }
 
     function resetIdentity() {
       if (gpsActive) stopGPS();
+
       DEVICE_ID = "";
+      gpsPointCount = 0;
+      gpsSamples    = [];
+      trackPoints   = [];
+
+      // Reset map state
+      if (leafletMap) {
+        leafletMap.remove();
+        leafletMap  = null;
+        gpsMarker   = null;
+        gpsCircle   = null;
+        gpsPolyline = null;
+      }
+
+      // Reset UI koordinat
+      ["gps-lat","gps-lng","gps-acc","gps-alt","gps-speed"].forEach(id => {
+        document.getElementById(id).innerText = "-";
+      });
+      document.getElementById("gps-point-count").innerText = "0";
+      document.getElementById("gps-last-update").innerText = "-";
+      document.getElementById("gps-last-sent").innerText   = "-";
+
       document.getElementById("identity-card").style.display   = "block";
       document.getElementById("identity-banner").style.display = "none";
       document.getElementById("gps-main").style.display        = "none";
       document.getElementById("input-gps-nama").value          = "";
+
+      // Reset tombol tracking
+      document.getElementById("btn-gps-start").style.display = "flex";
+      document.getElementById("btn-gps-stop").style.display  = "none";
+      setBadge("idle", "Idle");
     }
 
-    // ── MAP ──
+    // ─────────────────────────────────────────────
+    // MAP
+    // ─────────────────────────────────────────────
     function initMap() {
       if (leafletMap) return;
       leafletMap = L.map("map").setView([-7.2575, 112.7521], 15);
@@ -515,7 +574,7 @@
         gpsMarker = L.marker(latlng, {
           icon: L.divIcon({
             className: "",
-            html: `<div style="width:16px;height:16px;background:var(--gps, #0891b2);border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,
+            html: `<div style="width:16px;height:16px;background:#0891b2;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,
             iconSize: [16, 16], iconAnchor: [8, 8]
           })
         }).addTo(leafletMap).bindPopup(DEVICE_ID);
@@ -543,8 +602,14 @@
       leafletMap.setView(latlng, leafletMap.getZoom());
     }
 
-    // ── GPS ──
+    // ─────────────────────────────────────────────
+    // GPS
+    // ─────────────────────────────────────────────
     function startGPS() {
+      if (!DEVICE_ID) {
+        addLog("error", "DEVICE_ID kosong — simpan identitas dulu!");
+        return;
+      }
       if (!navigator.geolocation) {
         addLog("error", "Geolocation tidak didukung browser ini");
         return;
@@ -555,113 +620,108 @@
       document.getElementById("btn-gps-stop").style.display  = "flex";
       gpsActive = true;
 
+      // Kirim langsung setiap dapat posisi — sama persis gps.html lama
       gpsWatchId = navigator.geolocation.watchPosition(
-        onGPSSuccess, onGPSError,
+        function(pos) {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const acc = pos.coords.accuracy;
+          const alt = pos.coords.altitude;
+          const spd = pos.coords.speed;
+
+          // Update UI
+          document.getElementById("gps-lat").innerText   = lat.toFixed(6);
+          document.getElementById("gps-lng").innerText   = lng.toFixed(6);
+          document.getElementById("gps-acc").innerText   = acc != null ? acc.toFixed(0) + " m" : "-";
+          document.getElementById("gps-alt").innerText   = alt != null ? alt.toFixed(1) + " m" : "-";
+          document.getElementById("gps-speed").innerText = spd != null ? (spd * 3.6).toFixed(1) + " km/h" : "0 km/h";
+          document.getElementById("gps-last-update").innerText = new Date().toLocaleTimeString("id-ID");
+
+          gpsPointCount++;
+          document.getElementById("gps-point-count").innerText = gpsPointCount;
+
+          updateMap(lat, lng, acc);
+          sendGPS(lat, lng, acc);  // kirim langsung, no batch
+        },
+        function(err) {
+          const msgs = { 1: "Izin lokasi ditolak", 2: "Posisi tidak tersedia", 3: "Timeout" };
+          addLog("error", "GPS Error: " + (msgs[err.code] || err.message));
+          setBadge("idle", "Error");
+        },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
 
-      gpsSendTimer = setInterval(sendGPSBatch, SEND_INTERVAL_MS);
       addLog("success", "GPS tracking dimulai sebagai: " + DEVICE_ID);
     }
 
     function stopGPS() {
       gpsActive = false;
-      if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
-      if (gpsSendTimer) clearInterval(gpsSendTimer);
-      gpsWatchId = null;
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
 
       setBadge("idle", "Idle");
       document.getElementById("btn-gps-start").style.display = "flex";
       document.getElementById("btn-gps-stop").style.display  = "none";
       addLog("info", "GPS tracking dihentikan");
-
-      if (gpsSamples.length > 0) sendGPSBatch();
     }
 
-    function onGPSSuccess(pos) {
-      const c   = pos.coords;
-      const lat = c.latitude;
-      const lng = c.longitude;
-      const acc = c.accuracy;
-      const alt = c.altitude;
-      const spd = c.speed;
+    // Kirim langsung — SAMA PERSIS dengan gps.html lama yang terbukti masuk sheet
+    function sendGPS(lat, lng, acc) {
+      const params = new URLSearchParams();
+      params.append("device_id",  DEVICE_ID);
+      params.append("ts",         new Date().toISOString());
+      params.append("lat",        lat);
+      params.append("lng",        lng);
+      params.append("accuracy_m", acc);
 
-      document.getElementById("gps-lat").innerText   = lat.toFixed(6);
-      document.getElementById("gps-lng").innerText   = lng.toFixed(6);
-      document.getElementById("gps-acc").innerText   = acc ? acc.toFixed(0) + " m" : "-";
-      document.getElementById("gps-alt").innerText   = alt ? alt.toFixed(1) + " m" : "-";
-      document.getElementById("gps-speed").innerText = spd ? (spd * 3.6).toFixed(1) + " km/h" : "0 km/h";
+      fetch(TELEMETRY_URL + "?path=telemetry/gps", {
+        method: "POST",
+        body:   params
+      });
 
       const now = new Date().toLocaleTimeString("id-ID");
-      document.getElementById("gps-last-update").innerText = now;
-
-      gpsPointCount++;
-      document.getElementById("gps-point-count").innerText = gpsPointCount;
-
-      updateMap(lat, lng, acc);
-
-      gpsSamples.push({
-        t: new Date().toISOString(),
-        lat, lng,
-        acc: acc || null,
-        alt: alt || null,
-        spd: spd || null
-      });
+      document.getElementById("gps-last-sent").innerText = now;
+      addLog("success", "Terkirim: " + lat.toFixed(5) + ", " + lng.toFixed(5));
+      if (gpsActive) setBadge("active", "Tracking");
     }
 
-    function onGPSError(err) {
-      const msgs = { 1: "Izin lokasi ditolak", 2: "Posisi tidak tersedia", 3: "Timeout" };
-      addLog("error", "GPS Error: " + (msgs[err.code] || err.message));
-      setBadge("idle", "Error");
-    }
+    // ─────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────
 
-    async function sendGPSBatch() {
-      if (gpsSamples.length === 0) return;
-
-      const batch  = [...gpsSamples];
-      gpsSamples   = [];
-      setBadge("sending", "Mengirim...");
-
-      const payload = {
-        device_id: DEVICE_ID,
-        ts:        new Date().toISOString(),
-        samples:   batch
-      };
-
-      try {
-        await fetch(TELEMETRY_URL + "?path=telemetry/gps", {
-          method: "POST",
-          mode:   "no-cors",
-          body:   JSON.stringify(payload)
-        });
-        const now = new Date().toLocaleTimeString("id-ID");
-        document.getElementById("gps-last-sent").innerText = now + " (" + batch.length + " titik)";
-        addLog("success", "Terkirim " + batch.length + " titik GPS");
-      } catch(err) {
-        addLog("error", "Gagal kirim GPS: " + err.message);
-      } finally {
-        if (gpsActive) setBadge("active", "Tracking");
-        else           setBadge("idle",   "Idle");
-      }
-    }
-
-    // ── HELPERS ──
+    // FIX: badge diupdate tanpa menghapus elemen dot & teks yang sudah ada
     function setBadge(state, label) {
       const badge = document.getElementById("gps-badge");
       const dot   = document.getElementById("gps-dot");
-      badge.className = "badge badge-" + (state === "active" ? "active" : state === "sending" ? "sending" : "idle");
-      badge.innerHTML = `<span class="status-dot ${state === "active" ? "active" : ""}"></span> ${label}`;
+      const text  = document.getElementById("gps-badge-text");
+
+      // Update class badge
+      badge.className = "badge badge-" + (
+        state === "active"  ? "active"  :
+        state === "sending" ? "sending" : "idle"
+      );
+
+      // Update dot class
+      dot.className = "status-dot" + (state === "active" ? " active" : state === "sending" ? " sending" : "");
+
+      // Update label teks saja, tidak ganti innerHTML badge
+      text.innerText = label;
     }
 
     function addLog(type, msg) {
       const list  = document.getElementById("log-list");
       const empty = document.getElementById("log-empty");
       if (empty) empty.remove();
+
       const now  = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       const item = document.createElement("div");
       item.className = "log-item " + (type === "success" ? "success" : type === "error" ? "error" : "");
       item.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
       list.insertBefore(item, list.firstChild);
+
+      // Batasi 30 item
       while (list.children.length > 30) list.removeChild(list.lastChild);
     }
 
