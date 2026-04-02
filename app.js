@@ -376,6 +376,10 @@ async function processCheckIn(qrData) {
   // Selalu pakai BASE_URL — ganti di CONFIG jika perlu scan QR teman
   let qrToken = qrData;
 
+      try {
+    const parsed = JSON.parse(qrData);
+    if (parsed.token) qrToken = parsed.token;
+  } catch (e) {}
   try {
     const payload = {
       user_id:   USER_DATA.user_id,
