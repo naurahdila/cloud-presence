@@ -6,7 +6,7 @@
 // Ganti URL ini sesuai kebutuhan:
 // - URL GAS sendiri  → kalau scan QR sendiri / generate QR sendiri
 // - URL GAS teman    → kalau mau scan QR teman (check-in ke backend teman)
-const BASE_URL = "https://script.google.com/macros/s/AKfycbyIhTyCOmVcCoq4ooTBqh1xpLwD4j5paaU1yzqjyPPEwa6X70Ho5J8Ykkf9ZoO1Of5H/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzBM2tZu5jvx-ie2OiIvCCvGpiycos9npwRZ117Guy8mKn4n4QUhF88_7QNHbANF1_u/exec";
 
 const QR_DURATION_SECONDS = 120; // 2 menit
 
