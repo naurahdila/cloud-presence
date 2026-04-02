@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitor GPS — CloudPresence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --primary: #4338ca;
+      --gps: #0891b2;
+      --gps-light: rgba(8,145,178,0.08);
+      --bg: #f0f2f8;
+      --surface: #ffffff;
+      --foreground: #1a1a2e;
+      --muted-fg: #6b7280;
+      --border: #e5e7eb;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --success-fg: #15803d;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --warning: #d97706;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--foreground);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--primary); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; color: white;
+    }
+    .logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+    .logo-text span { color: var(--primary); }
+    .topbar-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      background: rgba(8,145,178,0.1); color: var(--gps);
+      border-radius: 100px; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .refresh-info { font-size: 12px; color: var(--muted-fg); display: flex; align-items: center; gap: 6px; }
+    .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+    .pulse-dot.off { background: #9ca3af; animation: none; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,0.4);} 50%{box-shadow:0 0 0 5px rgba(22,163,74,0);} }
+
+    .btn-top {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); background: white;
+      color: var(--muted-fg); font-family: var(--font-sans);
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+      text-decoration: none;
+    }
+    .btn-top:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* MAIN LAYOUT */
+    .main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: calc(100vh - 57px);
+    }
+
+    @media (max-width: 768px) {
+      .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-title { font-size: 14px; font-weight: 700; }
+    .sidebar-count {
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      background: var(--gps-light); color: var(--gps);
+      border-radius: 100px;
+    }
+
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    /* USER CARD */
+    .user-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+    .user-card:hover { border-color: var(--gps); background: var(--gps-light); }
+    .user-card.active { border-color: var(--gps); background: var(--gps-light); }
+
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 800; font-size: 14px; flex-shrink: 0;
+    }
+
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-coords { font-size: 11px; color: var(--muted-fg); font-family: var(--font-mono); margin-top: 1px; }
+
+    .user-status {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0;
+    }
+    .status-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      border-radius: 100px; text-transform: uppercase;
+    }
+    .status-badge.live { background: var(--success-bg); color: var(--success-fg); }
+    .status-badge.stale { background: #fef3c7; color: #92400e; }
+    .user-time { font-size: 10px; color: var(--muted-fg); }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--muted-fg); font-size: 13px;
+    }
+    .empty-state svg { opacity: 0.3; margin-bottom: 10px; }
+
+    /* MAP */
+    #map { width: 100%; height: 100%; z-index: 0; }
+
+    /* LOG strip at bottom */
+    .log-strip {
+      position: fixed; bottom: 0; left: 320px; right: 0;
+      background: rgba(26,26,46,0.92);
+      backdrop-filter: blur(4px);
+      color: #e5e7eb;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 16px;
+      display: flex; align-items: center; gap: 10px;
+      z-index: 50;
+    }
+    .log-strip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+    .log-strip-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    @media (max-width: 768px) {
+      .log-strip { left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+      </svg>
+    </div>
+    <h1 class="logo-text">Cloud<span>Presence</span></h1>
+    <span class="topbar-badge">GPS Monitor</span>
+  </div>
+  <div class="topbar-right">
+    <div class="refresh-info">
+      <div class="pulse-dot" id="live-dot"></div>
+      <span id="refresh-label">Refresh 5dtk</span>
+    </div>
+    <select style="padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:12px;font-weight:600;background:white;cursor:pointer;outline:none;"
+      onchange="changeInterval(this.value)">
+      <option value="3000">3 detik</option>
+      <option value="5000" selected>5 detik</option>
+      <option value="10000">10 detik</option>
+    </select>
+    <button class="btn-top" onclick="fitAllMarkers()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      Fit Semua
+    </button>
+    <a href="../index.html" class="btn-top">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+      Menu
+    </a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Pengguna Aktif</span>
+      <span class="sidebar-count" id="user-count">0 user</span>
+    </div>
+    <div class="sidebar-body" id="user-list">
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto;">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <p>Menunggu data GPS...</p>
+        <p style="margin-top:4px;font-size:11px;">Data akan muncul saat user aktif tracking</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+</div>
+
+<!-- LOG STRIP -->
+<div class="log-strip">
+  <div class="log-strip-dot"></div>
+  <span class="log-strip-text" id="log-text">Menunggu data...</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG — sama dengan gps.html
+// ═══════════════════════════════════════════
+const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
+
+let pollInterval = 5000;
+let pollTimer    = null;
+
+// Warna unik per user
+const USER_COLORS = [
+  "#0891b2","#7c3aed","#16a34a","#d97706","#dc2626",
+  "#0284c7","#9333ea","#15803d","#b45309","#b91c1c",
+  "#0e7490","#6d28d9","#166534","#92400e","#991b1b"
+];
+
+// State per user: { marker, circle, polyline, color, lastLat, lastLng, lastTs }
+const users = {};
+let colorIndex = 0;
+
+// ── MAP ──
+const map = L.map("map").setView([-7.2575, 112.7521], 14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap"
+}).addTo(map);
+
+// ── FETCH SEMUA USER ──
+async function fetchAllUsers() {
+  try {
+    // Ambil daftar semua device dari history
+    const res  = await fetch(`${TELEMETRY_URL}?path=telemetry/gps/devices`);
+    const json = await res.json();
+
+    if (!json.ok || !json.data) {
+      // Fallback: ambil dari history global
+      await fetchFromHistory();
+      return;
+    }
+
+    const devices = json.data.devices || [];
+    for (const deviceId of devices) {
+      await fetchUserLatest(deviceId);
+    }
+
+    updateSidebar();
+    setLog("Diperbarui: " + new Date().toLocaleTimeString("id-ID") + " — " + Object.keys(users).length + " user aktif");
+
+  } catch(err) {
+    // Fallback ke history
+    await fetchFromHistory();
+  }
+}
+
+// Fallback: ambil dari endpoint history global (semua titik)
+async function fetchFromHistory() {
+  try {
+    const res  = await fetch(`${TELEMETRY_URL}?path=telemetry/gps/history&limit=200`);
+    const json = await res.json();
+
+    if (!json.ok || !json.data) return;
+
+    const items = json.data.items || [];
+
+    // Group by device_id, ambil yang terbaru
+    const latest = {};
+    for (const item of items) {
+      const did = item.device_id;
+      if (!did) continue;
+      if (!latest[did] || new Date(item.ts) > new Date(latest[did].ts)) {
+        latest[did] = item;
+      }
+    }
+
+    for (const [deviceId, item] of Object.entries(latest)) {
+      updateUserOnMap(deviceId, parseFloat(item.lat), parseFloat(item.lng), parseFloat(item.accuracy_m) || 50, item.ts);
+    }
+
+    updateSidebar();
+    setLog("Diperbarui: " + new Date().toLocaleTimeString("id-ID") + " — " + Object.keys(users).length + " user");
+
+  } catch(err) {
+    setLog("Error: " + err.message);
+  }
+}
+
+async function fetchUserLatest(deviceId) {
+  try {
+    const res  = await fetch(`${TELEMETRY_URL}?path=telemetry/gps/latest&device_id=${encodeURIComponent(deviceId)}`);
+    const json = await res.json();
+    if (!json.ok || !json.data) return;
+    const d = json.data;
+    updateUserOnMap(deviceId, parseFloat(d.lat), parseFloat(d.lng), parseFloat(d.accuracy_m) || 50, d.ts);
+  } catch(err) {}
+}
+
+function updateUserOnMap(deviceId, lat, lng, acc, ts) {
+  if (isNaN(lat) || isNaN(lng)) return;
+
+  // Assign warna jika belum ada
+  if (!users[deviceId]) {
+    const color = USER_COLORS[colorIndex % USER_COLORS.length];
+    colorIndex++;
+    users[deviceId] = { color, marker: null, circle: null, polyline: null, trackPoints: [], lastLat: null, lastLng: null, lastTs: null };
+  }
+
+  const u      = users[deviceId];
+  const latlng = [lat, lng];
+  const age    = ts ? (Date.now() - new Date(ts).getTime()) / 1000 : 999;
+
+  // Marker
+  if (!u.marker) {
+    u.marker = L.marker(latlng, {
+      icon: L.divIcon({
+        className: "",
+        html: `<div style="
+          width:18px;height:18px;
+          background:${u.color};
+          border:3px solid white;
+          border-radius:50%;
+          box-shadow:0 2px 8px rgba(0,0,0,0.35);
+        "></div>`,
+        iconSize: [18, 18], iconAnchor: [9, 9]
+      })
+    }).addTo(map).bindPopup(`<b>${deviceId}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+  } else {
+    u.marker.setLatLng(latlng);
+    u.marker.getPopup().setContent(`<b>${deviceId}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+  }
+
+  // Circle akurasi
+  if (!u.circle) {
+    u.circle = L.circle(latlng, {
+      radius: acc, color: u.color, fillColor: u.color, fillOpacity: 0.1, weight: 1.5
+    }).addTo(map);
+  } else {
+    u.circle.setLatLng(latlng);
+    u.circle.setRadius(acc);
+  }
+
+  // Track polyline
+  u.trackPoints.push(latlng);
+  if (u.trackPoints.length > 100) u.trackPoints.shift(); // max 100 titik
+  if (!u.polyline) {
+    u.polyline = L.polyline(u.trackPoints, { color: u.color, weight: 2.5, opacity: 0.6 }).addTo(map);
+  } else {
+    u.polyline.setLatLngs(u.trackPoints);
+  }
+
+  u.lastLat = lat;
+  u.lastLng = lng;
+  u.lastTs  = ts;
+  u.age     = age;
+}
+
+// ── SIDEBAR ──
+function updateSidebar() {
+  const list = document.getElementById("user-list");
+  const keys = Object.keys(users);
+
+  document.getElementById("user-count").textContent = keys.length + " user";
+
+  if (keys.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto;">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+      <p>Menunggu data GPS...</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = "";
+  for (const [deviceId, u] of Object.entries(users)) {
+    const isLive  = u.age < 30;
+    const initial = deviceId.charAt(0).toUpperCase();
+    const time    = u.lastTs ? new Date(u.lastTs).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" }) : "-";
+    const coords  = u.lastLat != null ? `${u.lastLat.toFixed(4)}, ${u.lastLng.toFixed(4)}` : "-";
+
+    const card = document.createElement("div");
+    card.className = "user-card";
+    card.innerHTML = `
+      <div class="user-avatar" style="background:${u.color}">${initial}</div>
+      <div class="user-info">
+        <div class="user-name">${deviceId}</div>
+        <div class="user-coords">${coords}</div>
+      </div>
+      <div class="user-status">
+        <span class="status-badge ${isLive ? "live" : "stale"}">${isLive ? "Live" : "Stale"}</span>
+        <span class="user-time">${time}</span>
+      </div>
+    `;
+    card.onclick = () => {
+      if (u.marker) map.setView([u.lastLat, u.lastLng], 17);
+      u.marker.openPopup();
+    };
+    list.appendChild(card);
+  }
+}
+
+// ── FIT ALL MARKERS ──
+function fitAllMarkers() {
+  const keys = Object.keys(users);
+  if (keys.length === 0) return;
+  const bounds = L.latLngBounds(keys.map(k => [users[k].lastLat, users[k].lastLng]));
+  map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+// ── POLLING ──
+function startPolling() {
+  stopPolling();
+  fetchAllUsers();
+  pollTimer = setInterval(fetchAllUsers, pollInterval);
+  document.getElementById("live-dot").className = "pulse-dot";
+  document.getElementById("refresh-label").textContent = "Refresh " + (pollInterval/1000) + "dtk";
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+function changeInterval(val) {
+  pollInterval = parseInt(val);
+  startPolling();
+}
+
+function setLog(msg) {
+  document.getElementById("log-text").textContent = msg;
+}
+
+// ── START ──
+startPolling();
+</script>
+</body>
+</html>
