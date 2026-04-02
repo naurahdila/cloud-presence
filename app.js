@@ -3,12 +3,9 @@
    ========================================== */
 
 // --- CONFIG ---
-// Ganti URL ini sesuai kebutuhan:
-// - URL GAS sendiri  → kalau scan QR sendiri / generate QR sendiri
-// - URL GAS teman    → kalau mau scan QR teman (check-in ke backend teman)
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzBM2tZu5jvx-ie2OiIvCCvGpiycos9npwRZ117Guy8mKn4n4QUhF88_7QNHbANF1_u/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbxgSv71JmAE9pAEx93mikmyO1ML1p2b9zTSPqPKZy1807I-ve5FsMgSdTAfpDFpvwNG/exec";
 
-const QR_DURATION_SECONDS = 120; // 2 menit
+const QR_DURATION_SECONDS = 120; // 1 menit
 
 // --- STATE ---
 let currentToken = null;
@@ -19,12 +16,12 @@ let cameraStream = null;
 let scanningActive = false;
 let animFrameId = null;
 
-// Mahasiswa — hanya NIM & Nama, course/session diambil dari token saat scan
+// Mahasiswa — NIM, Nama, course_id, session_id diinput di form profil
 let USER_DATA = {
   user_id: "",              // NIM
   device_id: "",            // Nama mahasiswa
-  _resolved_course: "",     // diisi setelah check-in berhasil
-  _resolved_session: ""
+  course_id: "",            // diisi dari form profil
+  session_id: ""            // diisi dari form profil
 };
 
 // Dosen — course & session diinput manual
@@ -57,19 +54,23 @@ function switchTab(tab) {
 }
 
 // ==============================================
-// 2. MAHASISWA — SIMPAN PROFIL (NIM + NAMA SAJA)
+// 2. MAHASISWA — SIMPAN PROFIL (NIM + NAMA + COURSE + SESSION)
 // ==============================================
 function saveStudentProfile() {
-  const nim  = document.getElementById("input-nim").value.trim();
-  const nama = document.getElementById("input-nama").value.trim();
+  const nim      = document.getElementById("input-nim").value.trim();
+  const nama     = document.getElementById("input-nama").value.trim();
+  const courseId = document.getElementById("input-course-mhs").value.trim();
+  const sessionId = document.getElementById("input-session-mhs").value.trim();
 
-  if (!nim || !nama) {
-    showProfileError("NIM dan Nama wajib diisi!");
+  if (!nim || !nama || !courseId || !sessionId) {
+    showProfileError("Semua field wajib diisi!");
     return;
   }
 
   USER_DATA.user_id   = nim;
   USER_DATA.device_id = nama;
+  USER_DATA.course_id  = courseId;
+  USER_DATA.session_id = sessionId;
 
   document.getElementById("profile-form-mhs").style.display = "none";
   document.getElementById("scanner-section").style.display  = "block";
@@ -78,6 +79,9 @@ function saveStudentProfile() {
   document.getElementById("mhs-identity").style.display     = "flex";
   document.getElementById("mhs-nim-display").innerText      = nim;
   document.getElementById("mhs-nama-display").innerText     = nama;
+
+  document.getElementById("status-course-val").innerText  = courseId;
+  document.getElementById("status-session-val").innerText = sessionId;
 
   resetStatusBadge();
 }
@@ -90,10 +94,10 @@ function showProfileError(msg) {
 }
 
 function resetStudentProfile() {
-  USER_DATA.user_id           = "";
-  USER_DATA.device_id         = "";
-  USER_DATA._resolved_course  = "";
-  USER_DATA._resolved_session = "";
+  USER_DATA.user_id   = "";
+  USER_DATA.device_id = "";
+  USER_DATA.course_id  = "";
+  USER_DATA.session_id = "";
 
   document.getElementById("profile-form-mhs").style.display = "block";
   document.getElementById("scanner-section").style.display  = "none";
@@ -101,6 +105,8 @@ function resetStudentProfile() {
   document.getElementById("mhs-identity").style.display     = "none";
   document.getElementById("input-nim").value                = "";
   document.getElementById("input-nama").value               = "";
+  document.getElementById("input-course-mhs").value         = "";
+  document.getElementById("input-session-mhs").value        = "";
 
   resetStatusBadge();
   stopCamera();
@@ -115,7 +121,7 @@ function resetStatusBadge() {
 }
 
 // ==============================================
-// 3. DOSEN — GENERATE QR
+// 3. DOSEN — GENERATE QR (course & session dari input)
 // ==============================================
 async function generateQR() {
   const courseId  = document.getElementById("input-course-admin").value.trim();
@@ -160,7 +166,6 @@ async function generateQR() {
       document.getElementById("qr-token-text").innerText      = currentToken;
       document.getElementById("btn-regenerate").style.display = "none";
 
-      // QR hanya berisi token plain string
       document.getElementById("qrcode").innerHTML = "";
       new QRCode(document.getElementById("qrcode"), {
         text:         currentToken,
@@ -367,46 +372,29 @@ function scanQRFromVideo() {
 
 // ==============================================
 // 7. MAHASISWA — PROSES CHECK-IN
-// Check-in selalu dikirim ke BASE_URL
-// Ganti BASE_URL di atas untuk scan QR kelompok lain
+// Kirim: user_id, device_id, course_id, session_id, qr_token, ts
 // ==============================================
-async function processCheckIn(qrData) {
+async function processCheckIn(qrToken) {
   setScanStatus("processing", "Memproses check-in...");
 
-  // Selalu pakai BASE_URL — ganti di CONFIG jika perlu scan QR teman
-  let qrToken = qrData;
-
-      try {
-    const parsed = JSON.parse(qrData);
-    if (parsed.token) qrToken = parsed.token;
-  } catch (e) {}
   try {
     const payload = {
-      user_id:   USER_DATA.user_id,
-      device_id: USER_DATA.device_id,
-      qr_token:  qrToken,
-      ts:        new Date().toISOString(),
-      course_id:  "",   // akan di-resolve dari token oleh backend teman
-      session_id: "" 
+      user_id:    USER_DATA.user_id,
+      device_id:  USER_DATA.device_id,
+      course_id:  USER_DATA.course_id,
+      session_id: USER_DATA.session_id,
+      qr_token:   qrToken,
+      ts:         new Date().toISOString()
     };
 
     const res  = await fetch(BASE_URL + "?path=presence/checkin", {
       method: "POST",
-      body:   JSON.stringify(payload),
-      redirect: "follow"
+      body:   JSON.stringify(payload)
     });
     const json = await res.json();
 
     if (json.ok) {
       setScanStatus("success", "Check-in berhasil! ✓");
-
-      if (json.data) {
-        USER_DATA._resolved_course  = json.data.course_id  || "";
-        USER_DATA._resolved_session = json.data.session_id || "";
-        document.getElementById("status-course-val").innerText  = json.data.course_id  || "-";
-        document.getElementById("status-session-val").innerText = json.data.session_id || "-";
-      }
-
       updateStatusBadge("checked_in");
     } else {
       const errMsg = json.message || "Check-in gagal!";
@@ -430,7 +418,7 @@ async function processCheckIn(qrData) {
 // 8. MAHASISWA — REFRESH STATUS
 // ==============================================
 async function checkMyStatus() {
-  if (!USER_DATA.user_id || !USER_DATA._resolved_course || !USER_DATA._resolved_session) {
+  if (!USER_DATA.user_id || !USER_DATA.course_id || !USER_DATA.session_id) {
     resetStatusBadge();
     return;
   }
@@ -443,8 +431,8 @@ async function checkMyStatus() {
     var url = BASE_URL
       + "?path=presence/status"
       + "&user_id="    + encodeURIComponent(USER_DATA.user_id)
-      + "&course_id="  + encodeURIComponent(USER_DATA._resolved_course)
-      + "&session_id=" + encodeURIComponent(USER_DATA._resolved_session);
+      + "&course_id="  + encodeURIComponent(USER_DATA.course_id)
+      + "&session_id=" + encodeURIComponent(USER_DATA.session_id);
 
     var res  = await fetch(url);
     var json = await res.json();
@@ -496,23 +484,23 @@ function setScanStatus(type, message) {
   statusEl.innerHTML = iconHtml + '<span id="scan-status-text">' + message + '</span>';
 }
 
-function startAccelerometer() {
+function startAccelerometer(){
   if (typeof DeviceMotionEvent.requestPermission === "function") {
     DeviceMotionEvent.requestPermission()
     .then(permission => {
-      if (permission === "granted") {
+      if(permission === "granted"){
         listenAccelerometer();
-      } else {
+      }else{
         console.log("permission denied");
       }
     });
-  } else {
+  }else{
     listenAccelerometer();
   }
 }
 
-function listenAccelerometer() {
-  window.addEventListener("devicemotion", function (event) {
+function listenAccelerometer(){
+  window.addEventListener("devicemotion", function(event){
     let x = event.accelerationIncludingGravity.x || 0;
     let y = event.accelerationIncludingGravity.y || 0;
     let z = event.accelerationIncludingGravity.z || 0;
@@ -530,22 +518,26 @@ function listenAccelerometer() {
 setInterval(sendAccelBatch, 3000);
 
 let accelSamples = [];
-function sendAccelBatch() {
-  if (accelSamples.length === 0) return;
+function sendAccelBatch(){
+  if(accelSamples.length === 0) return;
 
   let payload = {
     device_id: USER_DATA.device_id || "unknown",
-    ts:        new Date().toISOString(),
-    samples:   accelSamples
+    ts: new Date().toISOString(),
+    samples: accelSamples
   };
 
-  fetch(TELEMETRY_URL + "?path=telemetry/accel", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(payload)
+  fetch(TELEMETRY_URL + "?path=telemetry/accel",{
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
   })
   .then(res => res.json())
-  .then(data => { console.log("telemetry sent", data); });
+  .then(data => {
+    console.log("telemetry sent", data);
+  });
 
   accelSamples = [];
 }
