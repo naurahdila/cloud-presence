@@ -1,10 +1,11 @@
 /* ==========================================
    CloudPresence - Vanilla JS (app.js)
-   Modified: gas_uri embedded in QR payload
-   for cross-group check-in support
    ========================================== */
 
 // --- CONFIG ---
+// Ganti URL ini sesuai kebutuhan:
+// - URL GAS sendiri  → kalau scan QR sendiri / generate QR sendiri
+// - URL GAS teman    → kalau mau scan QR teman (check-in ke backend teman)
 const BASE_URL = "https://script.google.com/macros/s/AKfycbyIhTyCOmVcCoq4ooTBqh1xpLwD4j5paaU1yzqjyPPEwa6X70Ho5J8Ykkf9ZoO1Of5H/exec";
 
 const QR_DURATION_SECONDS = 120; // 2 menit
@@ -115,9 +116,6 @@ function resetStatusBadge() {
 
 // ==============================================
 // 3. DOSEN — GENERATE QR
-// *** MODIFIED: QR berisi JSON { gas_uri, token }
-// agar scanner dari kelompok lain tahu harus
-// kirim check-in ke backend mana
 // ==============================================
 async function generateQR() {
   const courseId  = document.getElementById("input-course-admin").value.trim();
@@ -162,17 +160,10 @@ async function generateQR() {
       document.getElementById("qr-token-text").innerText      = currentToken;
       document.getElementById("btn-regenerate").style.display = "none";
 
-      // *** MODIFIED: embed gas_uri ke dalam QR payload
-      // sehingga scanner kelompok lain bisa tahu harus
-      // kirim check-in ke backend milik kelompok yang generate QR ini
-      const qrPayload = JSON.stringify({
-        gas_uri: BASE_URL,
-        token:   currentToken
-      });
-
+      // QR hanya berisi token plain string
       document.getElementById("qrcode").innerHTML = "";
       new QRCode(document.getElementById("qrcode"), {
-        text:         qrPayload,   // <-- pakai qrPayload, bukan currentToken langsung
+        text:         currentToken,
         width:        200,
         height:       200,
         colorDark:    "#1a1a2e",
@@ -376,31 +367,14 @@ function scanQRFromVideo() {
 
 // ==============================================
 // 7. MAHASISWA — PROSES CHECK-IN
-// *** MODIFIED: Baca gas_uri dari QR payload,
-// kirim check-in ke backend yang sesuai
-// (bisa milik kelompok lain)
+// Check-in selalu dikirim ke BASE_URL
+// Ganti BASE_URL di atas untuk scan QR kelompok lain
 // ==============================================
 async function processCheckIn(qrData) {
   setScanStatus("processing", "Memproses check-in...");
 
-  // Default: pakai backend sendiri
-  let targetUrl = BASE_URL;
-  let qrToken   = qrData;
-
-  // *** MODIFIED: Coba parse QR sebagai JSON dulu
-  // Jika berhasil dan ada gas_uri + token,
-  // gunakan gas_uri sebagai target backend
-  try {
-    const parsed = JSON.parse(qrData);
-    if (parsed.gas_uri && parsed.token) {
-      targetUrl = parsed.gas_uri;   // arahkan ke backend kelompok yang generate QR
-      qrToken   = parsed.token;
-      console.log("[CrossGroup] Check-in ke backend:", targetUrl);
-    }
-  } catch (e) {
-    // QR lama / plain string — fallback ke BASE_URL sendiri
-    console.log("[Legacy QR] Menggunakan BASE_URL sendiri");
-  }
+  // Selalu pakai BASE_URL — ganti di CONFIG jika perlu scan QR teman
+  let qrToken = qrData;
 
   try {
     const payload = {
@@ -410,7 +384,7 @@ async function processCheckIn(qrData) {
       ts:        new Date().toISOString()
     };
 
-    const res  = await fetch(targetUrl + "?path=presence/checkin", {
+    const res  = await fetch(BASE_URL + "?path=presence/checkin", {
       method: "POST",
       body:   JSON.stringify(payload)
     });
@@ -419,7 +393,6 @@ async function processCheckIn(qrData) {
     if (json.ok) {
       setScanStatus("success", "Check-in berhasil! ✓");
 
-      // Backend mengembalikan course_id & session_id hasil resolve dari token
       if (json.data) {
         USER_DATA._resolved_course  = json.data.course_id  || "";
         USER_DATA._resolved_session = json.data.session_id || "";
