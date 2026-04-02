@@ -390,7 +390,8 @@ async function processCheckIn(qrData) {
 
     const res  = await fetch(BASE_URL + "?path=presence/checkin", {
       method: "POST",
-      body:   JSON.stringify(payload)
+      body:   JSON.stringify(payload),
+      redirect: "follow"
     });
     const json = await res.json();
 
