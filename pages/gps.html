@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPS Tracking - CloudPresence</title>
+  <title>GPS — CloudPresence</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
   <style>
     :root {
       --primary: #4338ca;
@@ -22,6 +23,7 @@
       --success-fg: #15803d;
       --danger: #dc2626;
       --danger-bg: #fee2e2;
+      --warning: #d97706;
       --radius: 12px;
       --radius-sm: 8px;
       --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
@@ -45,23 +47,17 @@
       padding: 24px 16px 48px;
       min-height: 100dvh;
     }
-
-    .app-wrapper { width: 100%; max-width: 480px; }
+    .app-wrapper { width: 100%; max-width: 520px; }
 
     /* Header */
     .app-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      margin-bottom: 20px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; margin-bottom: 20px;
     }
     .logo-row { display: flex; align-items: center; gap: 10px; }
     .logo-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      background: var(--primary);
-      color: white;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--primary); color: white;
       display: flex; align-items: center; justify-content: center;
     }
     .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
@@ -70,47 +66,36 @@
 
     /* Back link */
     .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted-fg);
-      text-decoration: none;
-      margin-bottom: 16px;
-      padding: 6px 0;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600; color: var(--muted-fg);
+      text-decoration: none; margin-bottom: 16px; padding: 6px 0;
       transition: color 0.15s;
     }
     .back-link:hover { color: var(--foreground); }
 
-    /* Hero */
-    .gps-hero {
-      background: linear-gradient(135deg, var(--gps), #06b6d4);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 12px;
+    /* TAB NAV — sama persis style presensi */
+    .tab-nav {
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: #ededf0; border-radius: 10px;
+      padding: 4px; gap: 4px; margin-bottom: 20px;
     }
-    .gps-hero-icon {
-      width: 52px; height: 52px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .tab-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 16px; border: none; border-radius: 8px;
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease;
+      background: transparent; color: var(--muted-fg);
     }
-    .gps-hero-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-    .gps-hero-sub { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+    .tab-btn.active {
+      background: var(--surface); color: var(--gps);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .tab-btn-monitor.active { color: var(--gps); }
 
     /* Cards */
     .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      margin-bottom: 12px;
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden; margin-bottom: 12px;
     }
     .card-header { padding: 16px 20px 0; }
     .card-title-row { display: flex; align-items: center; gap: 8px; }
@@ -122,25 +107,16 @@
 
     /* Buttons */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-sans);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease;
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-gps { background: var(--gps); color: white; }
     .btn-gps:hover:not(:disabled) { background: var(--gps-hover); }
     .btn-outline {
-      background: transparent;
-      color: var(--foreground);
+      background: transparent; color: var(--foreground);
       border: 1.5px solid var(--border);
     }
     .btn-outline:hover:not(:disabled) { background: var(--gps-light); border-color: var(--gps); color: var(--gps); }
@@ -151,34 +127,21 @@
 
     /* Badge */
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 100px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.03em; text-transform: uppercase;
     }
     .badge-idle    { background: #e8e8ed; color: var(--muted-fg); }
     .badge-active  { background: var(--success-bg); color: var(--success-fg); }
     .badge-sending { background: #e0f2fe; color: var(--gps); }
 
     .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #9ca3af;
-      display: inline-block;
-      flex-shrink: 0;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #9ca3af; display: inline-block; flex-shrink: 0;
     }
-    .status-dot.active {
-      background: var(--success);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    .status-dot.sending {
-      background: var(--gps);
-    }
+    .status-dot.active { background: var(--success); animation: pulse 1.5s ease-in-out infinite; }
+    .status-dot.sending { background: var(--gps); }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.3); }
       50%       { box-shadow: 0 0 0 5px rgba(22,163,74,0); }
@@ -186,62 +149,43 @@
 
     /* Coord grid */
     .coord-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
     }
     .coord-item {
-      background: var(--gps-light);
-      border: 1.5px solid rgba(8,145,178,0.15);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
+      background: var(--gps-light); border: 1.5px solid rgba(8,145,178,0.15);
+      border-radius: var(--radius-sm); padding: 10px 12px;
     }
     .coord-item.full { grid-column: 1 / -1; }
     .coord-label {
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--gps); margin-bottom: 3px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--gps); margin-bottom: 3px;
     }
-    .coord-value {
-      font-family: var(--font-mono);
-      font-size: 14px; font-weight: 700;
-      color: var(--foreground);
-    }
+    .coord-value { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--foreground); }
 
-    /* Map */
-    #map {
-      width: 100%;
-      height: 280px;
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
+    /* Map input */
+    #map-input {
+      width: 100%; height: 260px;
+      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
       margin-bottom: 12px;
     }
 
     /* Info row */
     .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 12px;
-      background: rgba(0,0,0,0.02);
-      border-radius: var(--radius-sm);
-      margin-bottom: 6px;
-      font-size: 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 12px; background: rgba(0,0,0,0.02);
+      border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 13px;
     }
     .info-label { color: var(--muted-fg); }
     .info-value { font-weight: 600; }
 
     /* Log */
     .log-list {
-      max-height: 140px;
-      overflow-y: auto;
+      max-height: 130px; overflow-y: auto;
       display: flex; flex-direction: column; gap: 4px;
     }
     .log-item {
       display: flex; align-items: flex-start; gap: 8px;
-      padding: 6px 10px;
-      background: rgba(0,0,0,0.02);
+      padding: 6px 10px; background: rgba(0,0,0,0.02);
       border-radius: 6px; font-size: 12px;
     }
     .log-time { color: var(--muted-fg); font-family: var(--font-mono); font-size: 11px; flex-shrink: 0; }
@@ -251,15 +195,69 @@
     .log-list::-webkit-scrollbar { width: 4px; }
     .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
 
+    /* ── MONITOR TAB ── */
+    .monitor-layout {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    /* Monitor map — full width, taller */
+    #map-monitor {
+      width: 100%; height: 420px;
+      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+    }
+
+    /* User list monitor */
+    .monitor-user-list {
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 260px; overflow-y: auto;
+    }
+    .monitor-user-list::-webkit-scrollbar { width: 4px; }
+    .monitor-user-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
+
+    .monitor-user-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); cursor: pointer;
+      transition: all 0.15s; background: var(--surface);
+    }
+    .monitor-user-item:hover { border-color: var(--gps); background: var(--gps-light); }
+
+    .monitor-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 800; font-size: 13px; flex-shrink: 0;
+    }
+    .monitor-name   { font-size: 13px; font-weight: 700; }
+    .monitor-coords { font-size: 11px; color: var(--muted-fg); font-family: var(--font-mono); margin-top: 1px; }
+    .monitor-time   { font-size: 10px; color: var(--muted-fg); }
+
+    .m-status-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 100px; text-transform: uppercase; margin-left: auto; flex-shrink: 0;
+    }
+    .m-status-badge.live  { background: var(--success-bg); color: var(--success-fg); }
+    .m-status-badge.stale { background: #fef3c7; color: #92400e; }
+    .m-status-badge.idle  { background: #e8e8ed; color: var(--muted-fg); }
+
+    .monitor-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;
+    }
+    .monitor-stat-box {
+      background: var(--gps-light); border: 1.5px solid rgba(8,145,178,0.15);
+      border-radius: var(--radius-sm); padding: 10px 14px; text-align: center;
+    }
+    .monitor-stat-val { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--gps); }
+    .monitor-stat-lbl { font-size: 10px; color: var(--muted-fg); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+    .monitor-log-text {
+      font-size: 11px; color: var(--muted-fg); font-family: var(--font-mono);
+      padding: 8px 12px; background: rgba(0,0,0,0.02);
+      border-radius: var(--radius-sm); margin-top: 4px;
+    }
+
     .app-footer {
       text-align: center; font-size: 11px;
       color: var(--muted-fg); margin-top: 20px; padding: 8px 0;
-    }
-
-    /* Error state for input */
-    .input-error {
-      border-color: var(--danger) !important;
-      box-shadow: 0 0 0 3px rgba(220,38,38,0.12) !important;
     }
   </style>
 </head>
@@ -287,387 +285,353 @@
         Kembali ke Menu
       </a>
 
-      <!-- ===== STEP 1: FORM IDENTITAS ===== -->
-      <div class="card" id="identity-card">
-        <div class="card-header">
-          <div class="card-title-row">
-            <svg class="icon-gps" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <h2 class="card-title">Identitas Pengguna</h2>
-          </div>
-          <p class="card-desc">Isi nama sebelum memulai GPS tracking</p>
-        </div>
-        <div class="card-body">
-          <div style="display:flex;gap:8px;align-items:flex-end;">
-            <div style="flex:1;">
-              <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--foreground);margin-bottom:6px;">
-                Nama <span style="color:var(--danger)">*</span>
-              </label>
-              <input
-                type="text"
-                id="input-gps-nama"
-                placeholder="Masukkan nama kamu"
-                style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--surface);outline:none;transition:border-color 0.15s;"
-                onfocus="this.style.borderColor='var(--gps)';this.style.boxShadow='0 0 0 3px rgba(8,145,178,0.12)'"
-                onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
-                onkeydown="if(event.key==='Enter') saveIdentity()"
-              />
-            </div>
-            <button class="btn btn-gps" onclick="saveIdentity()" style="padding:10px 16px;flex-shrink:0;height:42px;">
-              Simpan
-            </button>
-          </div>
-          <p id="identity-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);padding:8px 12px;border-radius:6px;margin-top:8px;"></p>
-        </div>
-      </div>
-
-      <!-- Identity Banner (shown after identity saved) -->
-      <div id="identity-banner" style="display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gps-light);border:1.5px solid rgba(8,145,178,0.2);border-radius:var(--radius);margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;background:var(--gps);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--foreground);" id="banner-nama"></div>
-            <div style="font-size:12px;color:var(--gps);font-weight:600;">GPS aktif sebagai perangkat ini</div>
-          </div>
-        </div>
-        <button onclick="resetIdentity()" title="Ganti nama"
-          style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1.5px solid var(--border);border-radius:6px;background:white;color:var(--muted-fg);cursor:pointer;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+      <!-- TAB NAV -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" id="tab-input" onclick="switchTab('input')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
           </svg>
+          GPS Tracking
         </button>
-      </div>
+        <button class="tab-btn tab-btn-monitor" id="tab-monitor" onclick="switchTab('monitor')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+            <line x1="9" y1="3" x2="9" y2="18"/>
+            <line x1="15" y1="6" x2="15" y2="21"/>
+          </svg>
+          Monitor
+        </button>
+      </nav>
 
-      <!-- ===== STEP 2: GPS SECTION ===== -->
-      <div id="gps-main" style="display:none;">
+      <!-- ══════════════════════════════════════ -->
+      <!-- TAB INPUT: GPS TRACKING               -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="panel-input">
 
-        <!-- Hero -->
-        <div class="gps-hero">
-          <div class="gps-hero-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          </div>
-          <div>
-            <div class="gps-hero-title">GPS Tracking</div>
-            <div class="gps-hero-sub">Lokasi real-time dikirim ke server</div>
-          </div>
-        </div>
-
-        <!-- GPS Card -->
-        <div class="card">
+        <!-- Form Identitas -->
+        <div class="card" id="identity-card">
           <div class="card-header">
-            <div class="card-title-row spread">
-              <div class="card-title-row">
-                <svg class="icon-gps" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <h2 class="card-title">Posisi Saat Ini</h2>
-              </div>
-              <!-- Badge: elemen dot dan teks dipisah supaya tidak hilang saat update -->
-              <span class="badge badge-idle" id="gps-badge">
-                <span class="status-dot" id="gps-dot"></span>
-                <span id="gps-badge-text">Idle</span>
-              </span>
+            <div class="card-title-row">
+              <svg class="icon-gps" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <h2 class="card-title">Identitas Pengguna</h2>
             </div>
-            <p class="card-desc">Koordinat GPS perangkat kamu</p>
+            <p class="card-desc">Isi nama sebelum memulai GPS tracking</p>
           </div>
           <div class="card-body">
-            <div class="coord-grid">
-              <div class="coord-item">
-                <div class="coord-label">Latitude</div>
-                <div class="coord-value" id="gps-lat">-</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--foreground);margin-bottom:6px;">
+                  Nama <span style="color:var(--danger)">*</span>
+                </label>
+                <input type="text" id="input-gps-nama" placeholder="Masukkan nama kamu"
+                  style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--surface);outline:none;transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='var(--gps)';this.style.boxShadow='0 0 0 3px rgba(8,145,178,0.12)'"
+                  onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+                  onkeydown="if(event.key==='Enter') saveIdentity()" />
               </div>
-              <div class="coord-item">
-                <div class="coord-label">Longitude</div>
-                <div class="coord-value" id="gps-lng">-</div>
+              <button class="btn btn-gps" onclick="saveIdentity()" style="padding:10px 16px;flex-shrink:0;height:42px;">Simpan</button>
+            </div>
+            <p id="identity-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);padding:8px 12px;border-radius:6px;margin-top:8px;"></p>
+          </div>
+        </div>
+
+        <!-- Identity Banner -->
+        <div id="identity-banner" style="display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gps-light);border:1.5px solid rgba(8,145,178,0.2);border-radius:var(--radius);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:var(--gps);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;" id="banner-nama"></div>
+              <div style="font-size:12px;color:var(--gps);font-weight:600;">GPS aktif sebagai perangkat ini</div>
+            </div>
+          </div>
+          <button onclick="resetIdentity()" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1.5px solid var(--border);border-radius:6px;background:white;color:var(--muted-fg);cursor:pointer;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- GPS Main -->
+        <div id="gps-main" style="display:none;">
+          <!-- GPS Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-row spread">
+                <div class="card-title-row">
+                  <svg class="icon-gps" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <h2 class="card-title">Posisi Saat Ini</h2>
+                </div>
+                <span class="badge badge-idle" id="gps-badge">
+                  <span class="status-dot" id="gps-dot"></span>
+                  <span id="gps-badge-text">Idle</span>
+                </span>
               </div>
-              <div class="coord-item">
-                <div class="coord-label">Akurasi</div>
-                <div class="coord-value" id="gps-acc">-</div>
+              <p class="card-desc">Koordinat GPS perangkat kamu</p>
+            </div>
+            <div class="card-body">
+              <div class="coord-grid">
+                <div class="coord-item"><div class="coord-label">Latitude</div><div class="coord-value" id="gps-lat">-</div></div>
+                <div class="coord-item"><div class="coord-label">Longitude</div><div class="coord-value" id="gps-lng">-</div></div>
+                <div class="coord-item"><div class="coord-label">Akurasi</div><div class="coord-value" id="gps-acc">-</div></div>
+                <div class="coord-item"><div class="coord-label">Ketinggian</div><div class="coord-value" id="gps-alt">-</div></div>
+                <div class="coord-item full"><div class="coord-label">Kecepatan</div><div class="coord-value" id="gps-speed">-</div></div>
               </div>
-              <div class="coord-item">
-                <div class="coord-label">Ketinggian</div>
-                <div class="coord-value" id="gps-alt">-</div>
+              <div id="map-input"></div>
+              <div class="btn-row">
+                <button class="btn btn-gps full-width btn-lg" id="btn-gps-start" onclick="startGPS()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Mulai Tracking
+                </button>
+                <button class="btn btn-outline btn-lg" id="btn-gps-stop" style="display:none;" onclick="stopGPS()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="6" y="6" width="12" height="12"/>
+                  </svg>
+                  Stop
+                </button>
               </div>
-              <div class="coord-item full">
-                <div class="coord-label">Kecepatan</div>
-                <div class="coord-value" id="gps-speed">-</div>
+              <div style="margin-top:12px;">
+                <div class="info-row"><span class="info-label">Update terakhir</span><span class="info-value" id="gps-last-update">-</span></div>
+                <div class="info-row"><span class="info-label">Total titik dicatat</span><span class="info-value" id="gps-point-count">0</span></div>
+                <div class="info-row"><span class="info-label">Terakhir dikirim</span><span class="info-value" id="gps-last-sent">-</span></div>
               </div>
             </div>
+          </div>
 
-            <!-- Map -->
-            <div id="map"></div>
-
-            <!-- Buttons -->
-            <div class="btn-row">
-              <button class="btn btn-gps full-width btn-lg" id="btn-gps-start" onclick="startGPS()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                Mulai Tracking
-              </button>
-              <button class="btn btn-outline btn-lg" id="btn-gps-stop" style="display:none;" onclick="stopGPS()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="6" y="6" width="12" height="12"/>
-                </svg>
-                Stop
-              </button>
+          <!-- Log -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-row spread">
+                <div class="card-title-row">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <h2 class="card-title" style="font-size:14px;">Activity Log</h2>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="clearLog()">Hapus</button>
+              </div>
             </div>
-
-            <div style="margin-top:12px;">
-              <div class="info-row">
-                <span class="info-label">Update terakhir</span>
-                <span class="info-value" id="gps-last-update">-</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Total titik dicatat</span>
-                <span class="info-value" id="gps-point-count">0</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Batch terakhir dikirim</span>
-                <span class="info-value" id="gps-last-sent">-</span>
+            <div class="card-body" style="padding-top:12px;">
+              <div class="log-list" id="log-list">
+                <div class="log-empty" id="log-empty">Belum ada aktivitas</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Log -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title-row spread">
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- TAB MONITOR: MULTI-USER MAP           -->
+      <!-- ══════════════════════════════════════ -->
+      <section id="panel-monitor" style="display:none;">
+        <div class="monitor-layout">
+
+          <!-- Stats -->
+          <div class="monitor-stats">
+            <div class="monitor-stat-box">
+              <div class="monitor-stat-val" id="mon-total">0</div>
+              <div class="monitor-stat-lbl">Total User</div>
+            </div>
+            <div class="monitor-stat-box">
+              <div class="monitor-stat-val" id="mon-live">0</div>
+              <div class="monitor-stat-lbl">Live</div>
+            </div>
+          </div>
+
+          <!-- Peta monitor -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-row spread">
+                <div class="card-title-row">
+                  <svg class="icon-gps" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+                    <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+                  </svg>
+                  <h2 class="card-title">Peta Real-time</h2>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="fitAllMarkers()">Fit Semua</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:12px;">
+              <div id="map-monitor"></div>
+            </div>
+          </div>
+
+          <!-- User list -->
+          <div class="card">
+            <div class="card-header">
               <div class="card-title-row">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
+                <svg class="icon-gps" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>
-                <h2 class="card-title" style="font-size:14px;">Activity Log</h2>
+                <h2 class="card-title" style="font-size:14px;">Pengguna Aktif</h2>
               </div>
-              <button class="btn btn-outline btn-sm" onclick="clearLog()">Hapus</button>
+            </div>
+            <div class="card-body" style="padding-top:12px;">
+              <div class="monitor-user-list" id="monitor-user-list">
+                <div class="log-empty">Menunggu data GPS dari pengguna...</div>
+              </div>
             </div>
           </div>
-          <div class="card-body" style="padding-top:12px;">
-            <div class="log-list" id="log-list">
-              <div class="log-empty" id="log-empty">Belum ada aktivitas</div>
-            </div>
-          </div>
+
+          <!-- Log monitor -->
+          <div class="monitor-log-text" id="monitor-log">Menunggu data...</div>
+
         </div>
+      </section>
 
-      </div><!-- end gps-main -->
-
-      <footer class="app-footer">CloudPresence v1.0 — GPS Tracking</footer>
+      <footer class="app-footer">CloudPresence v1.0 — GPS</footer>
     </div>
   </main>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const TELEMETRY_URL  = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
+    const TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbyI8ri9H6x1uybEyoYv9ymU7tjtMvafrBrMvTykD1xp8ytowvdL6m8csVyOArGC2lE9/exec";
+
+    // ══════════════════════════════════════
+    // TAB SWITCH
+    // ══════════════════════════════════════
+    function switchTab(tab) {
+      document.getElementById("panel-input").style.display   = tab === "input"   ? "block" : "none";
+      document.getElementById("panel-monitor").style.display = tab === "monitor" ? "block" : "none";
+      document.getElementById("tab-input").classList.toggle("active",   tab === "input");
+      document.getElementById("tab-monitor").classList.toggle("active", tab === "monitor");
+
+      if (tab === "monitor") {
+        setTimeout(() => {
+          if (!monitorMap) initMonitorMap();
+          else monitorMap.invalidateSize();
+        }, 100);
+      }
+    }
+
+    // ══════════════════════════════════════
+    // TAB INPUT — GPS TRACKING
+    // ══════════════════════════════════════
     let DEVICE_ID     = "";
     let gpsActive     = false;
     let gpsWatchId    = null;
     let gpsPointCount = 0;
+    let inputMap      = null;
+    let gpsMarker     = null;
+    let gpsCircle     = null;
+    let gpsPolyline   = null;
+    let trackPoints   = [];
 
-    // Leaflet
-    let leafletMap  = null;
-    let gpsMarker   = null;
-    let gpsCircle   = null;
-    let gpsPolyline = null;
-    let trackPoints = [];
-
-    // ─────────────────────────────────────────────
-    // IDENTITY
-    // ─────────────────────────────────────────────
     function saveIdentity() {
       const input = document.getElementById("input-gps-nama");
       const nama  = input.value.trim();
-
       if (!nama) {
         const err = document.getElementById("identity-error");
         err.innerText = "Nama wajib diisi!";
         err.style.display = "block";
         input.style.borderColor = "var(--danger)";
         input.style.boxShadow   = "0 0 0 3px rgba(220,38,38,0.12)";
-        setTimeout(() => {
-          err.style.display     = "none";
-          input.style.borderColor = "var(--border)";
-          input.style.boxShadow   = "none";
-        }, 2500);
+        setTimeout(() => { err.style.display = "none"; input.style.borderColor = "var(--border)"; input.style.boxShadow = "none"; }, 2500);
         return;
       }
-
-      // FIX: pastikan DEVICE_ID benar-benar di-set sebelum lanjut
       DEVICE_ID = nama;
-
       document.getElementById("identity-card").style.display   = "none";
       document.getElementById("identity-banner").style.display = "flex";
       document.getElementById("banner-nama").innerText          = nama;
       document.getElementById("gps-main").style.display        = "block";
-
-      // Init map setelah elemen visible
-      setTimeout(initMap, 150);
+      setTimeout(initInputMap, 150);
       addLog("success", "Identitas disimpan: " + nama);
     }
 
     function resetIdentity() {
       if (gpsActive) stopGPS();
-
-      DEVICE_ID = "";
-      gpsPointCount = 0;
-      gpsSamples    = [];
-      trackPoints   = [];
-
-      // Reset map state
-      if (leafletMap) {
-        leafletMap.remove();
-        leafletMap  = null;
-        gpsMarker   = null;
-        gpsCircle   = null;
-        gpsPolyline = null;
-      }
-
-      // Reset UI koordinat
-      ["gps-lat","gps-lng","gps-acc","gps-alt","gps-speed"].forEach(id => {
-        document.getElementById(id).innerText = "-";
-      });
+      DEVICE_ID = ""; gpsPointCount = 0; trackPoints = [];
+      if (inputMap) { inputMap.remove(); inputMap = null; gpsMarker = null; gpsCircle = null; gpsPolyline = null; }
+      ["gps-lat","gps-lng","gps-acc","gps-alt","gps-speed"].forEach(id => { document.getElementById(id).innerText = "-"; });
       document.getElementById("gps-point-count").innerText = "0";
       document.getElementById("gps-last-update").innerText = "-";
       document.getElementById("gps-last-sent").innerText   = "-";
-
       document.getElementById("identity-card").style.display   = "block";
       document.getElementById("identity-banner").style.display = "none";
       document.getElementById("gps-main").style.display        = "none";
       document.getElementById("input-gps-nama").value          = "";
-
-      // Reset tombol tracking
-      document.getElementById("btn-gps-start").style.display = "flex";
-      document.getElementById("btn-gps-stop").style.display  = "none";
+      document.getElementById("btn-gps-start").style.display   = "flex";
+      document.getElementById("btn-gps-stop").style.display    = "none";
       setBadge("idle", "Idle");
     }
 
-    // ─────────────────────────────────────────────
-    // MAP
-    // ─────────────────────────────────────────────
-    function initMap() {
-      if (leafletMap) return;
-      leafletMap = L.map("map").setView([-7.2575, 112.7521], 15);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(leafletMap);
+    function initInputMap() {
+      if (inputMap) return;
+      inputMap = L.map("map-input").setView([-7.2575, 112.7521], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(inputMap);
     }
 
-    function updateMap(lat, lng, acc) {
-      if (!leafletMap) return;
+    function updateInputMap(lat, lng, acc) {
+      if (!inputMap) return;
       const latlng = [lat, lng];
-
       if (!gpsMarker) {
-        gpsMarker = L.marker(latlng, {
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="width:16px;height:16px;background:#0891b2;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,
-            iconSize: [16, 16], iconAnchor: [8, 8]
-          })
-        }).addTo(leafletMap).bindPopup(DEVICE_ID);
-      } else {
-        gpsMarker.setLatLng(latlng);
-      }
-
+        gpsMarker = L.marker(latlng, { icon: L.divIcon({ className: "", html: `<div style="width:16px;height:16px;background:#0891b2;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`, iconSize: [16,16], iconAnchor: [8,8] }) }).addTo(inputMap).bindPopup(DEVICE_ID);
+      } else { gpsMarker.setLatLng(latlng); }
       if (!gpsCircle) {
-        gpsCircle = L.circle(latlng, {
-          radius: acc || 50,
-          color: "#0891b2", fillColor: "#bae6fd", fillOpacity: 0.25
-        }).addTo(leafletMap);
-      } else {
-        gpsCircle.setLatLng(latlng);
-        gpsCircle.setRadius(acc || 50);
-      }
-
+        gpsCircle = L.circle(latlng, { radius: acc||50, color:"#0891b2", fillColor:"#bae6fd", fillOpacity:0.25 }).addTo(inputMap);
+      } else { gpsCircle.setLatLng(latlng); gpsCircle.setRadius(acc||50); }
       trackPoints.push(latlng);
-      if (!gpsPolyline) {
-        gpsPolyline = L.polyline(trackPoints, { color: "#0891b2", weight: 3, opacity: 0.7 }).addTo(leafletMap);
-      } else {
-        gpsPolyline.setLatLngs(trackPoints);
-      }
-
-      leafletMap.setView(latlng, leafletMap.getZoom());
+      if (!gpsPolyline) { gpsPolyline = L.polyline(trackPoints, { color:"#0891b2", weight:3, opacity:0.7 }).addTo(inputMap); }
+      else { gpsPolyline.setLatLngs(trackPoints); }
+      inputMap.setView(latlng, inputMap.getZoom());
     }
 
-    // ─────────────────────────────────────────────
-    // GPS
-    // ─────────────────────────────────────────────
     function startGPS() {
-      if (!DEVICE_ID) {
-        addLog("error", "DEVICE_ID kosong — simpan identitas dulu!");
-        return;
-      }
-      if (!navigator.geolocation) {
-        addLog("error", "Geolocation tidak didukung browser ini");
-        return;
-      }
-
+      if (!DEVICE_ID) { addLog("error", "Simpan identitas dulu!"); return; }
+      if (!navigator.geolocation) { addLog("error", "Geolocation tidak didukung"); return; }
       setBadge("active", "Tracking");
       document.getElementById("btn-gps-start").style.display = "none";
       document.getElementById("btn-gps-stop").style.display  = "flex";
       gpsActive = true;
-
-      // Kirim langsung setiap dapat posisi — sama persis gps.html lama
       gpsWatchId = navigator.geolocation.watchPosition(
         function(pos) {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const acc = pos.coords.accuracy;
-          const alt = pos.coords.altitude;
-          const spd = pos.coords.speed;
-
-          // Update UI
+          const lat = pos.coords.latitude, lng = pos.coords.longitude;
+          const acc = pos.coords.accuracy, alt = pos.coords.altitude, spd = pos.coords.speed;
           document.getElementById("gps-lat").innerText   = lat.toFixed(6);
           document.getElementById("gps-lng").innerText   = lng.toFixed(6);
           document.getElementById("gps-acc").innerText   = acc != null ? acc.toFixed(0) + " m" : "-";
           document.getElementById("gps-alt").innerText   = alt != null ? alt.toFixed(1) + " m" : "-";
-          document.getElementById("gps-speed").innerText = spd != null ? (spd * 3.6).toFixed(1) + " km/h" : "0 km/h";
+          document.getElementById("gps-speed").innerText = spd != null ? (spd*3.6).toFixed(1) + " km/h" : "0 km/h";
           document.getElementById("gps-last-update").innerText = new Date().toLocaleTimeString("id-ID");
-
           gpsPointCount++;
           document.getElementById("gps-point-count").innerText = gpsPointCount;
-
-          updateMap(lat, lng, acc);
-          sendGPS(lat, lng, acc);  // kirim langsung, no batch
+          updateInputMap(lat, lng, acc);
+          sendGPS(lat, lng, acc);
         },
         function(err) {
-          const msgs = { 1: "Izin lokasi ditolak", 2: "Posisi tidak tersedia", 3: "Timeout" };
+          const msgs = {1:"Izin lokasi ditolak", 2:"Posisi tidak tersedia", 3:"Timeout"};
           addLog("error", "GPS Error: " + (msgs[err.code] || err.message));
           setBadge("idle", "Error");
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
-
-      addLog("success", "GPS tracking dimulai sebagai: " + DEVICE_ID);
+      addLog("success", "Tracking dimulai: " + DEVICE_ID);
     }
 
     function stopGPS() {
       gpsActive = false;
-      if (gpsWatchId !== null) {
-        navigator.geolocation.clearWatch(gpsWatchId);
-        gpsWatchId = null;
-      }
-
+      if (gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
       setBadge("idle", "Idle");
       document.getElementById("btn-gps-start").style.display = "flex";
       document.getElementById("btn-gps-stop").style.display  = "none";
-      addLog("info", "GPS tracking dihentikan");
+      addLog("info", "Tracking dihentikan");
     }
 
-    // Kirim langsung — SAMA PERSIS dengan gps.html lama yang terbukti masuk sheet
     function sendGPS(lat, lng, acc) {
       const params = new URLSearchParams();
       params.append("device_id",  DEVICE_ID);
@@ -675,58 +639,157 @@
       params.append("lat",        lat);
       params.append("lng",        lng);
       params.append("accuracy_m", acc);
-
-      fetch(TELEMETRY_URL + "?path=telemetry/gps", {
-        method: "POST",
-        body:   params
-      });
-
-      const now = new Date().toLocaleTimeString("id-ID");
-      document.getElementById("gps-last-sent").innerText = now;
+      fetch(TELEMETRY_URL + "?path=telemetry/gps", { method:"POST", body:params });
+      document.getElementById("gps-last-sent").innerText = new Date().toLocaleTimeString("id-ID");
       addLog("success", "Terkirim: " + lat.toFixed(5) + ", " + lng.toFixed(5));
       if (gpsActive) setBadge("active", "Tracking");
     }
 
-    // ─────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────
-
-    // FIX: badge diupdate tanpa menghapus elemen dot & teks yang sudah ada
     function setBadge(state, label) {
       const badge = document.getElementById("gps-badge");
       const dot   = document.getElementById("gps-dot");
       const text  = document.getElementById("gps-badge-text");
-
-      // Update class badge
-      badge.className = "badge badge-" + (
-        state === "active"  ? "active"  :
-        state === "sending" ? "sending" : "idle"
-      );
-
-      // Update dot class
-      dot.className = "status-dot" + (state === "active" ? " active" : state === "sending" ? " sending" : "");
-
-      // Update label teks saja, tidak ganti innerHTML badge
-      text.innerText = label;
+      badge.className = "badge badge-" + (state==="active" ? "active" : state==="sending" ? "sending" : "idle");
+      dot.className   = "status-dot" + (state==="active" ? " active" : state==="sending" ? " sending" : "");
+      text.innerText  = label;
     }
 
     function addLog(type, msg) {
       const list  = document.getElementById("log-list");
       const empty = document.getElementById("log-empty");
       if (empty) empty.remove();
-
-      const now  = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const now  = new Date().toLocaleTimeString("id-ID", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
       const item = document.createElement("div");
-      item.className = "log-item " + (type === "success" ? "success" : type === "error" ? "error" : "");
+      item.className = "log-item " + (type==="success" ? "success" : type==="error" ? "error" : "");
       item.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
       list.insertBefore(item, list.firstChild);
-
-      // Batasi 30 item
       while (list.children.length > 30) list.removeChild(list.lastChild);
     }
 
     function clearLog() {
       document.getElementById("log-list").innerHTML = '<div class="log-empty" id="log-empty">Belum ada aktivitas</div>';
+    }
+
+    // ══════════════════════════════════════
+    // TAB MONITOR — MULTI-USER MAP
+    // ══════════════════════════════════════
+    const USER_COLORS = ["#0891b2","#7c3aed","#16a34a","#d97706","#dc2626","#0284c7","#9333ea","#15803d","#b45309","#b91c1c"];
+    const monUsers = {};
+    let monColorIdx  = 0;
+    let monitorMap   = null;
+    let monPollTimer = null;
+
+    function initMonitorMap() {
+      if (monitorMap) return;
+      monitorMap = L.map("map-monitor").setView([-7.2575, 112.7521], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(monitorMap);
+      startMonitorPoll();
+    }
+
+    function startMonitorPoll() {
+      if (monPollTimer) clearInterval(monPollTimer);
+      fetchAllUsers();
+      monPollTimer = setInterval(fetchAllUsers, 5000);
+    }
+
+   async function fetchAllUsers() {
+  try {
+    // 1. Ambil daftar semua device
+    const devRes  = await fetch(`${TELEMETRY_URL}?path=telemetry/gps/devices`);
+    const devJson = await devRes.json();
+    if (!devJson.ok || !devJson.data) return;
+
+    const devices = devJson.data.devices || [];
+
+    // 2. Fetch lokasi terbaru tiap device secara paralel
+    const fetches = devices.map(did =>
+      fetch(`${TELEMETRY_URL}?path=telemetry/gps/latest&device_id=${encodeURIComponent(did)}`)
+        .then(r => r.json())
+        .then(json => {
+          if (json.ok && json.data) {
+            const d = json.data;
+            updateMonitorUser(String(did), parseFloat(d.lat), parseFloat(d.lng), parseFloat(d.accuracy_m)||50, d.ts);
+          }
+        })
+        .catch(() => {})
+    );
+
+    await Promise.allSettled(fetches);
+
+    updateMonitorSidebar();
+    document.getElementById("monitor-log").textContent =
+      "Diperbarui: " + new Date().toLocaleTimeString("id-ID") + " — " + Object.keys(monUsers).length + " user ditemukan";
+
+  } catch(err) {
+    document.getElementById("monitor-log").textContent = "Error: " + err.message;
+  }
+}
+
+    function updateMonitorUser(did, lat, lng, acc, ts) {
+      if (isNaN(lat) || isNaN(lng)) return;
+      if (!monUsers[did]) {
+        const color = USER_COLORS[monColorIdx % USER_COLORS.length];
+        monColorIdx++;
+        monUsers[did] = { color, marker:null, circle:null, trackPoints:[], lastLat:null, lastLng:null, lastTs:null, age:999 };
+      }
+      const u      = monUsers[did];
+      const latlng = [lat, lng];
+      const age    = ts ? (Date.now() - new Date(ts).getTime()) / 1000 : 999;
+
+      if (!u.marker) {
+        u.marker = L.marker(latlng, { icon: L.divIcon({ className:"", html:`<div style="width:18px;height:18px;background:${u.color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`, iconSize:[18,18], iconAnchor:[9,9] }) })
+          .addTo(monitorMap).bindPopup(`<b>${did}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      } else {
+        u.marker.setLatLng(latlng);
+        u.marker.getPopup().setContent(`<b>${did}</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+      if (!u.circle) {
+        u.circle = L.circle(latlng, { radius:acc, color:u.color, fillColor:u.color, fillOpacity:0.1, weight:1.5 }).addTo(monitorMap);
+      } else { u.circle.setLatLng(latlng); u.circle.setRadius(acc); }
+
+      u.trackPoints.push(latlng);
+      if (u.trackPoints.length > 100) u.trackPoints.shift();
+
+      u.lastLat = lat; u.lastLng = lng; u.lastTs = ts; u.age = age;
+    }
+
+    function updateMonitorSidebar() {
+      const keys   = Object.keys(monUsers);
+      const live   = keys.filter(k => monUsers[k].age < 60).length;
+      document.getElementById("mon-total").textContent = keys.length;
+      document.getElementById("mon-live").textContent  = live;
+
+      const list = document.getElementById("monitor-user-list");
+      if (keys.length === 0) {
+        list.innerHTML = '<div class="log-empty">Belum ada user aktif tracking</div>';
+        return;
+      }
+      list.innerHTML = "";
+      for (const [did, u] of Object.entries(monUsers)) {
+        const isLive = u.age < 60;
+        const time   = u.lastTs ? new Date(u.lastTs).toLocaleTimeString("id-ID") : "-";
+        const coords = u.lastLat != null ? `${u.lastLat.toFixed(4)}, ${u.lastLng.toFixed(4)}` : "-";
+        const item   = document.createElement("div");
+        item.className = "monitor-user-item";
+        item.innerHTML = `
+          <div class="monitor-avatar" style="background:${u.color}">${did.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="monitor-name">${did}</div>
+            <div class="monitor-coords">${coords}</div>
+            <div class="monitor-time">${time}</div>
+          </div>
+          <span class="m-status-badge ${isLive ? 'live' : 'stale'}">${isLive ? 'Live' : 'Stale'}</span>
+        `;
+        item.onclick = () => { if (u.marker) { monitorMap.setView([u.lastLat, u.lastLng], 17); u.marker.openPopup(); } };
+        list.appendChild(item);
+      }
+    }
+
+    function fitAllMarkers() {
+      const keys = Object.keys(monUsers).filter(k => monUsers[k].lastLat != null);
+      if (keys.length === 0) return;
+      const bounds = L.latLngBounds(keys.map(k => [monUsers[k].lastLat, monUsers[k].lastLng]));
+      monitorMap.fitBounds(bounds, { padding: [40, 40] });
     }
   </script>
 </body>
