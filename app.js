@@ -385,7 +385,9 @@ async function processCheckIn(qrData) {
       user_id:   USER_DATA.user_id,
       device_id: USER_DATA.device_id,
       qr_token:  qrToken,
-      ts:        new Date().toISOString()
+      ts:        new Date().toISOString(),
+      course_id:  "",   // akan di-resolve dari token oleh backend teman
+      session_id: "" 
     };
 
     const res  = await fetch(BASE_URL + "?path=presence/checkin", {
