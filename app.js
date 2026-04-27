@@ -3,7 +3,7 @@
    ========================================== */
 
 // --- CONFIG ---
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwgOfGoXyWSEERPtQ0jJ2L4LtMEdfDBO4MOI8Q-f0TjQKFfS9MeVllkjwJ5ZbRliJPQ/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbxgSv71JmAE9pAEx93mikmyO1ML1p2b9zTSPqPKZy1807I-ve5FsMgSdTAfpDFpvwNG/exec";
 
 const QR_DURATION_SECONDS = 120; // 1 menit
 
